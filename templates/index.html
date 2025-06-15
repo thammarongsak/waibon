@@ -1,1 +1,18 @@
-
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Waibon GPT</title>
+</head>
+<body style="font-family:sans-serif; padding:40px;">
+  <h1>ถามอะไรก็ได้กับไวบอน 🤖</h1>
+  <form method="POST">
+    <input name="question" placeholder="พิมพ์คำถามที่นี่" style="width:300px;">
+    <button type="submit">ถามเลย</button>
+  </form>
+  {% if response %}
+    <hr>
+    <h3>ไวบอนตอบ:</h3>
+    <p>{{ response }}</p>
+  {% endif %}
+</body>
+</html>
