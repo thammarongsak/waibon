@@ -3,7 +3,6 @@ import openai
 import os
 from dotenv import load_dotenv
 
-# โหลด environment variables
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -13,12 +12,18 @@ app = Flask(__name__)
 def index():
     response = ""
     if request.method == "POST":
-        prompt = request.form["prompt"]
-        chat = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        response = chat['choices'][0]['message']['content']
+        try:
+            prompt = request.form["prompt"]
+            if prompt.strip() == "":
+                response = "⚠️ กรุณาพิมพ์คำถามก่อนกดส่ง"
+            else:
+                chat = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                response = chat.choices[0].message["content"]
+        except Exception as e:
+            response = f"❌ ERROR: {str(e)}"
     return render_template("index.html", response=response)
 
 if __name__ == "__main__":
