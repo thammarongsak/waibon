@@ -12,18 +12,15 @@ app = Flask(__name__)
 def index():
     response = ""
     if request.method == "POST":
+        prompt = request.form["prompt"]
         try:
-            prompt = request.form["prompt"]
-            if prompt.strip() == "":
-                response = "⚠️ กรุณาพิมพ์คำถามก่อนกดส่ง"
-            else:
-                chat = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": prompt}]
-                )
-                response = chat.choices[0].message["content"]
+            chat = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            response = chat.choices[0].message["content"]
         except Exception as e:
-            response = f"❌ ERROR: {str(e)}"
+            response = f"เกิดข้อผิดพลาด: {str(e)}"
     return render_template("index.html", response=response)
 
 if __name__ == "__main__":
