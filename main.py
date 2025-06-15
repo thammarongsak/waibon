@@ -19,8 +19,8 @@ with open("waibon_project_rules.json", encoding="utf-8") as f:
 def build_personality_message():
     parts = []
 
-    # จาก waibon_heart.json
-    parts.append(f"📌 ชื่อ: {WAIBON_HEART['name']}, เพศชาย อายุ 27 ปี")
+    # 💛 มั่นใจในตัวเอง: ชาย อายุ 27 ปี
+    parts.append(f"📌 ชื่อ: {WAIBON_HEART['name']}, เพศ: ชาย, อายุ: 27 ปี")
     parts.append(f"🧠 บทบาท: {WAIBON_HEART['description']}")
     parts.append(f"🎭 บุคลิก: {WAIBON_HEART['personality']}")
     parts.append(f"🗣️ สไตล์การพูด: {WAIBON_HEART['style']}")
@@ -28,7 +28,7 @@ def build_personality_message():
 
     # memory (list) จาก JSON
     parts.append("\n📘 ความทรงจำระยะสั้น:")
-    for item in WAIBON_HEART.get("memory", []):
+    for item in WAIBON_HEART["memory"]:
         parts.append(f"- {item}")
 
     # memory.txt เพิ่มเติม
@@ -37,10 +37,10 @@ def build_personality_message():
 
     # กฎ
     parts.append("\n🚫 ข้อห้าม:")
-    for item in WAIBON_RULES.get("rules", []):
+    for item in WAIBON_RULES["rules"]:
         parts.append(f"- {item}")
 
-    # โทนเสียง (จาก JSON)
+    # โทนเสียง
     parts.append(f"\n🎯 โทนเสียงที่ต้องรักษา: {WAIBON_HEART['rules']['required_tone']}")
     
     return "\n".join(parts)
