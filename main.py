@@ -1,28 +1,24 @@
-from flask import Flask, request, render_template
+from flask import Flask, render_template, request
 import openai
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    response = ""
+    response_text = ""
     if request.method == "POST":
-        prompt = request.form["prompt"]
+        question = request.form["question"]
         try:
-            chat = openai.ChatCompletion.create(
+            response = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": question}]
             )
-            response = chat.choices[0].message["content"]
+            response_text = response.choices[0].message.content
         except Exception as e:
-            response = f"เกิดข้อผิดพลาด: {str(e)}"
-    return render_template("index.html", response=response)
+            response_text = f"เกิดข้อผิดพลาด: {str(e)}"
+    return render_template("index.html", response=response_text)
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True)
