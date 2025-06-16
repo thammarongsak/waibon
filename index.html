@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ถามอะไรก็ได้กับไวบอน 🤍</title>
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background: #fffaf8;
+            color: #222;
+            text-align: center;
+            padding: 2rem;
+        }
+        h1 {
+            font-size: 2.2rem;
+        }
+        form {
+            margin: 2rem auto;
+            max-width: 500px;
+        }
+        input[type="text"] {
+            width: 80%%;
+            padding: 0.6rem;
+            font-size: 1.1rem;
+        }
+        button {
+            padding: 0.6rem 1.2rem;
+            font-size: 1rem;
+            margin-left: 0.5rem;
+        }
+        .reply-box {
+            margin-top: 2rem;
+            font-size: 1.2rem;
+            color: #444;
+        }
+    </style>
+</head>
+<body>
+    <h1>ถามอะไรก็ได้กับไวบอน 🤍</h1>
+    <form method="POST" action="/ask">
+        <input type="text" name="question" placeholder="อยากระบายอะไรกับน้องก็ได้นะ..." required>
+        <button type="submit">ถามเลย</button>
+    </form>
+    <div class="reply-box">
+        {% if response %}
+            <p><strong>ไวบอน:</strong> {{ response }}</p>
+        {% endif %}
+    </div>
+</body>
+</html>
