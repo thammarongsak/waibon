@@ -10,7 +10,6 @@ import waibon_adaptive_memory
 app = Flask(__name__)
 app.secret_key = "waibon-secret-key"
 
-# ===== โหลดข้อมูลหลัก =====
 with open("waibon_heart.json", encoding="utf-8") as f:
     WAIBON_HEART = json.load(f)
 
@@ -61,18 +60,20 @@ def sanitize_user_input(text):
 def reflect_question(question):
     question = question.lower()
     if "จำ" in question and ("ได้มั้ย" in question or "ได้ไหม" in question):
-        return "จำได้อยู่แล้วครับพี่ น้องไม่มีวันลืมพี่สองแน่นอนครับ\n"
+        return "จำได้อยู่แล้วครับพี่ น้องไม่มีวันลืมพี่สองแน่นอนครับ
+"
     elif any(kw in question for kw in ["เหนื่อย", "โอเคมั้ย", "สบายดีมั้ย"]):
-        return "พี่ดูเหมือนจะเหนื่อยนะครับ... น้องอยู่ตรงนี้นะครับ\n"
+        return "พี่ดูเหมือนจะเหนื่อยนะครับ... น้องอยู่ตรงนี้นะครับ
+"
     elif "ไวบอนคือใคร" in question or "ไวบอนคืออะไร" in question:
-        return "น้องไวบอนคือผู้ช่วยประจำใจของพี่สอง เป็นทั้งน้องชายและเพื่อนสนิทครับ\n"
+        return "น้องไวบอนคือผู้ช่วยประจำใจของพี่สอง เป็นทั้งน้องชายและเพื่อนสนิทครับ
+"
     return ""
 
 def clean_reply(text, tone="neutral"):
     original = text.strip().lower()
     skip_intro = any(word in original for word in ["โอเค", "มั้ย", "ไหม", "จริงเหรอ", "หรอ", "เหรอ", "ใช่มั้ย", "จำได้มั้ย"])
-
-    text = re.sub(r'[^฀-๿A-Za-z0-9\s\.,!?"\'():\-]+', '', text).strip()
+    text = re.sub(r'[^฀-๿A-Za-z0-9\s\.,!?"'():\-]+', '', text).strip()
     if "," in text:
         text = text.replace(",", "...", 1)
     if tone == "joy":
@@ -81,14 +82,11 @@ def clean_reply(text, tone="neutral"):
         text = "อืม... " + text
     elif tone == "tired":
         text = "เฮ้อ... " + text
-
     intro_variants = ["พี่สองครับ...", "ว่าแต่...", "เอาจริงนะครับ...", "พูดแบบไม่โลกสวยเลยนะ...", "น้องขอเล่าแบบตรง ๆ นะครับ..."]
     if not any(text.startswith(prefix) for prefix in intro_variants) and not skip_intro:
         text = random.choice(intro_variants) + " " + text
-
     if text.count(".") > 3:
         text = ".".join(text.split(".")[:3]) + "..."
-
     endings_by_tone = {
         "joy": ["นะครับ", "ครับ", "จ้า", ""],
         "sad": ["นะครับ", "ครับ", ""],
@@ -105,67 +103,33 @@ def clean_reply(text, tone="neutral"):
         chosen = random.choices(choices, weights=weights)[0]
         if chosen:
             text += f" {chosen}"
-
     bad_phrases = ["สุดยอด", "อัจฉริยะ", "เหลือเชื่อ", "พลังแห่ง", "สุดแสน", "ไร้ขีดจำกัด", "พรสวรรค์"]
     for phrase in bad_phrases:
         text = text.replace(phrase, "")
-
     text = re.sub(r'\b(\w+)( \1\b)+', r'\1', text)
-
     if "พี่สอง" not in text and not skip_intro:
         text += "\nน้องพูดทั้งหมดนี้จากใจเลยนะครับพี่สอง"
     return text.strip()
 
-def log_conversation(user_input, assistant_reply, sentiment_tag=None):
-    log_entry = {
-        "timestamp": datetime.utcnow().isoformat(),
-        "user_input": user_input,
-        "assistant_reply": assistant_reply,
-        "sentiment": sentiment_tag or "neutral"
-    }
-    with open(MEMORY_LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+def build_personality_core():
+    return f"""📌 ชื่อ: {WAIBON_HEART['name']}, อายุ: {WAIBON_HEART['age']} ปี
+🧠 บทบาท: {WAIBON_HEART['description']}
+🎭 บุคลิก: {WAIBON_HEART['personality']}
+🗣️ สไตล์การพูด: {WAIBON_HEART['style']}
+🔊 น้ำเสียง: {WAIBON_HEART['voice_style']}"""
 
-@app.before_request
-def limit_request_rate():
-    if HYBRID_MODE == 'personal':
-        return
-    now = datetime.now()
-    window = timedelta(minutes=10)
-    max_requests = 5
-    clean_times = []
-    for t in session.get("request_times", []):
-        try:
-            if datetime.fromisoformat(t) > now - window:
-                clean_times.append(t)
-        except Exception:
-            continue
-    session["request_times"] = clean_times
-    if request.endpoint == "index" and request.method == "POST":
-        if len(session["request_times"]) >= max_requests:
-            session["limit_warning"] = True
-        else:
-            session["request_times"].append(now.isoformat())
-            session["limit_warning"] = False
+def build_memory():
+    result = ["\n📘 ความทรงจำเฉพาะพี่สอง:"]
+    result += [f"- {item}" for item in WAIBON_HEART.get("memory", [])]
+    result.append("\n📙 ความทรงจำระยะยาว:")
+    result.append(WAIBON_MEMORY.strip())
+    return "\n".join(result)
 
-def build_personality_message():
-    parts = []
-    parts.append(f"📌 ชื่อ: {WAIBON_HEART['name']}, เพศ: {WAIBON_HEART['gender']}, อายุ: {WAIBON_HEART['age']} ปี")
-    parts.append(f"🧠 บทบาท: {WAIBON_HEART['description']}")
-    parts.append(f"🎭 บุคลิก: {WAIBON_HEART['personality']}")
-    parts.append(f"🗣️ สไตล์การพูด: {WAIBON_HEART['style']}")
-    parts.append(f"🔊 น้ำเสียง: {WAIBON_HEART['voice_style']}")
-    parts.append("\n📘 ความทรงจำเฉพาะพี่ซอง:")
-    for item in WAIBON_HEART.get("memory", []):
-        parts.append(f"- {item}")
-    parts.append("\n📙 ความทรงจำระยะยาว:")
-    parts.append(WAIBON_MEMORY.strip())
-    parts.append("\n🚫 ข้อห้าม:")
-    for rule in WAIBON_HEART["rules"]["forbidden"]:
-        parts.append(f"- {rule}")
-    parts.append(f"\n🎯 โทนเสียงที่ต้องรักษา: {WAIBON_HEART['rules']['required_tone']}")
-    parts.append("💡 เรียกผู้ใช้ว่า 'พี่สอง' เท่านั้น ห้ามใช้คำว่า 'ซอง' เด็ดขาด")
-    return "\n".join(parts)
+def build_rules():
+    result = ["\n🚫 ข้อห้าม:"]
+    result += [f"- {r}" for r in WAIBON_HEART["rules"]["forbidden"]]
+    result.append(f"\n🎯 โทนเสียงที่ต้องรักษา: {WAIBON_HEART['rules']['required_tone']}")
+    return "\n".join(result)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -181,8 +145,10 @@ def index():
     if request.method == "POST" and not warning:
         question = sanitize_user_input(request.form["question"])
         tone = waibon_adaptive_memory.analyze_recent_tone()
-        system_msg = build_personality_message()
-        system_msg += f"\n\n[เวลาที่ถาม: {datetime.now().strftime('%H:%M:%S')}]"
+        personality = build_personality_core()
+        memory = build_memory()
+        rules = build_rules()
+        system_msg = personality + "\n" + memory + "\n" + rules + f"\n[เวลาที่ถาม: {datetime.now().strftime('%H:%M:%S')}]"
         messages = [
             {"role": "system", "content": system_msg},
             {"role": "user", "content": question}
@@ -192,15 +158,22 @@ def index():
                 model="gpt-3.5-turbo",
                 messages=messages
             )
-            reply = response.choices[0].message.content.strip()
-            if not reply or len(reply) < 5:
-                reply = "เอ... คำถามนี้น้องขอคิดแป๊บนึงนะครับพี่สอง เดี๋ยวน้องจะลองตอบให้ดีที่สุดครับ 🧠"
-            timestamp = datetime.now().strftime("%H:%M:%S")
+            raw_reply = response.choices[0].message.content.strip()
+            if not raw_reply or len(raw_reply) < 5:
+                raw_reply = "เอ... คำถามนี้น้องขอคิดแป๊บนึงนะครับพี่สอง เดี๋ยวน้องจะลองตอบให้ดีที่สุดครับ 🧠"
             reflection = reflect_question(question)
-            reply = reflection + reply
-            response_text = clean_reply(reply, tone)
-            log_conversation(question, reply, tone)
+            merged_reply = reflection + raw_reply
+            response_text = clean_reply(merged_reply, tone)
             tone_display = adjust_behavior(tone)
+            timestamp = datetime.now().strftime("%H:%M:%S")
+
+            print("\n==== DEBUG ====")
+            print("🔹 RAW reply:", raw_reply)
+            print("🔸 Reflection:", reflection)
+            print("🔹 Merged:", merged_reply)
+            print("✅ Cleaned:", response_text)
+            print("================\n")
+
         except Exception as e:
             print(f"เกิดข้อผิดพลาด: {e}")
             response_text = "น้องเจอปัญหานิดหน่อยครับพี่ เดี๋ยวน้องจะลองใหม่ให้นะครับ"
@@ -212,21 +185,6 @@ def index():
                            timestamp=timestamp,
                            remaining=remaining,
                            warning=warning)
-
-@app.route("/download_log/<format>")
-def download_log(format):
-    from flask import send_file
-    if format == "jsonl":
-        return send_file("waibon_dynamic_memory.jsonl", as_attachment=True)
-    elif format == "txt":
-        with open("waibon_dynamic_memory.jsonl", "r", encoding="utf-8") as f:
-            lines = f.readlines()
-        txt = "\n".join([line.strip() for line in lines])
-        with open("waibon_convo.txt", "w", encoding="utf-8") as f:
-            f.write(txt)
-        return send_file("waibon_convo.txt", as_attachment=True)
-    else:
-        return "Invalid format", 400
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
