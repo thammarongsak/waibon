@@ -23,6 +23,9 @@ with open("waibon_project_rules.json", encoding="utf-8") as f:
 MEMORY_LOG_FILE = "waibon_dynamic_memory.jsonl"
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# 🌐 Hybrid Mode Setting
+HYBRID_MODE = 'personal'  # 'personal' หรือ 'public'
+
 # ===== Intent-Based Tone Detection =====
 def detect_intent_and_set_tone(user_input: str) -> str:
     user_input = user_input.lower()
@@ -140,8 +143,13 @@ def log_conversation(user_input, assistant_reply, sentiment_tag=None):
     with open(MEMORY_LOG_FILE, "a", encoding="utf-8") as f:
         f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
+
+# ===== Hybrid Request Limit (ระบบจำกัดคำถามตามโหมด) =====
 @app.before_request
 def limit_request_rate():
+    if HYBRID_MODE == 'personal':
+        return  # โหมดส่วนตัว ไม่จำกัดคำถาม
+
     now = datetime.now()
     window = timedelta(minutes=10)
     max_requests = 5
@@ -154,7 +162,6 @@ def limit_request_rate():
         else:
             session["request_times"].append(now.isoformat())
             session["limit_warning"] = False
-
 def build_personality_message():
     parts = []
     parts.append(f"📌 ชื่อ: {WAIBON_HEART['name']}, เพศ: {WAIBON_HEART['gender']}, อายุ: {WAIBON_HEART['age']} ปี")
@@ -187,6 +194,7 @@ def index():
         tone_display = adjust_behavior(tone)
         system_msg = build_personality_message()
 
+        system_msg += f"\n\n[เวลาที่ถาม: {datetime.now().strftime('%H:%M:%S')}]"  # เพิ่ม timestamp ให้ prompt เปลี่ยน
         messages = [
             {"role": "system", "content": system_msg},
             {"role": "user", "content": question}
