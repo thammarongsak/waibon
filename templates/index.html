@@ -41,6 +41,13 @@
     </div>
     {% endif %}
 
+    {% if response %}
+    <div style="font-size: 0.7rem; color: gray; margin-top: 1rem;">
+        🕒 ตอบเมื่อ: {{ timestamp }}<br>
+        📶 โหมด: {{ tone }}
+    </div>
+    {% endif %}
+
     <div style="margin-top: 2rem;">
         <a href="/download_log/txt" class="btn">📄 ดาวน์โหลด .txt</a>
         <a href="/download_log/jsonl" class="btn">🧾 ดาวน์โหลด .jsonl</a>
