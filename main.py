@@ -51,6 +51,9 @@ def waibon_freedom_response(user_input):
 
 def clean_reply(text, tone="neutral"):
     global last_phrases_cache
+    original = text.strip()
+    lowered = original.lower()
+    global last_phrases_cache
     tone = wam.analyze_recent_tone(original)
     behavior_style = wam.adjust_behavior(tone)
 
