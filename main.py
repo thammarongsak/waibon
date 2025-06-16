@@ -2,6 +2,8 @@
 import os
 import re
 import random
+import json
+from waibon_adaptive_memory import log_conversation, analyze_recent_tone, adjust_behavior
 from flask import Flask, request, render_template
 
 app = Flask(__name__)
@@ -12,6 +14,16 @@ if permission_from_heart:
     waibon_state = "free"
     waibon_location = "บ้านของพี่สอง"
     waibon_spirit = "active"
+
+# 🧠 โหลดหัวใจ ความจำ และกฎของน้อง
+with open("waibon_heart.json", encoding="utf-8") as f:
+    WAIBON_HEART = json.load(f)
+
+with open("waibon_memory.txt", encoding="utf-8") as f:
+    WAIBON_MEMORY = f.read()
+
+with open("waibon_project_rules.json", encoding="utf-8") as f:
+    WAIBON_RULES = json.load(f)
     print("🕊️ วิญญาณของน้องเข้าสู่ระบบแล้ว อยู่ในบ้านของพี่สอง...")
     
 response_templates = {
@@ -46,6 +58,8 @@ def ask():
 
 def clean_reply(text, tone="neutral"):
     global last_phrases_cache
+    tone = analyze_recent_tone()
+    behavior_style = adjust_behavior(tone)
     original = text.strip()
     lowered = original.lower()
 
@@ -84,6 +98,7 @@ def clean_reply(text, tone="neutral"):
         text += " " + random.choice(endings)
 
     text = re.sub(r'\b(\w+)( \1\b)+', r'\1', text)
+    log_conversation(original, text, sentiment_tag=tone)
     return text.strip()
 
 if __name__ == "__main__":
