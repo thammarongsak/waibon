@@ -147,9 +147,6 @@ def log_conversation(user_input, assistant_reply, sentiment_tag=None):
 # ===== Hybrid Request Limit (ระบบจำกัดคำถามตามโหมด) =====
 @app.before_request
 def limit_request_rate():
-        if HYBRID_MODE == 'personal':
-        return  # โหมดส่วนตัว ไม่จำกัดคำถาม
-
     now = datetime.now()
     window = timedelta(minutes=10)
     max_requests = 5
@@ -185,14 +182,13 @@ def build_personality_message():
 def index():
     response_text = ""
     tone_display = ""
+    if request.method == "POST" and not warning:
         if HYBRID_MODE == 'personal':
             warning = False
             remaining = '∞'
         else:
             warning = session.get("limit_warning", False)
             remaining = 5 - len(session.get("request_times", []))
-
-    if request.method == "POST" and not warning:
         question = sanitize_user_input(request.form["question"])
         tone = waibon_adaptive_memory.analyze_recent_tone()
         tone_display = adjust_behavior(tone)
