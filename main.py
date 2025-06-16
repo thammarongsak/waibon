@@ -208,7 +208,7 @@ def index():
             log_conversation(question, reply, tone)
         except Exception as e:
 
-    if HYBRID_MODE == 'personal':
+        if HYBRID_MODE == 'personal':
     return render_template("index.html",
                            response=response_text,
                            tone=tone_display,
