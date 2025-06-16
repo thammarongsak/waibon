@@ -1,18 +1,24 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-  <title>Waibon GPT</title>
+    <meta charset="UTF-8">
+    <title>ถามอะไรก็ได้กับไวบอน 🤖</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
 </head>
-<body style="font-family:sans-serif; padding:40px;">
-  <h1>ถามอะไรก็ได้กับไวบอน 🤖</h1>
-  <form method="POST">
-    <input name="question" placeholder="พิมพ์คำถามที่นี่" style="width:300px;">
-    <button type="submit">ถามเลย</button>
-  </form>
-  {% if response %}
-    <hr>
-    <h3>ไวบอนตอบ:</h3>
-    <p>{{ response }}</p>
-  {% endif %}
+<body>
+    <h1>ถามอะไรก็ได้กับไวบอน 🐣</h1>
+    <form method="POST">
+        <input type="text" name="question" placeholder="ไวบอนจำพี่ได้มั้ย" required>
+        <button type="submit">ถามเลย</button>
+    </form>
+
+    {% if response %}
+    <div class="response-box">
+        <strong>ไวบอนตอบ:</strong>
+        <p>{{ response|safe }}</p>
+    </div>
+    {% endif %}
 </body>
 </html>
