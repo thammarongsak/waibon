@@ -23,6 +23,7 @@ def log_conversation(user_input, assistant_reply, sentiment_tag=None):
         f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
 def analyze_recent_tone(n=20):
+    n = int(n)  # ป้องกันกรณีมีการส่งค่าเป็น string
     """วิเคราะห์โทนคำพูดล่าสุดจากพี่ซอง"""
     try:
         with open(MEMORY_LOG_FILE, encoding="utf-8") as f:
