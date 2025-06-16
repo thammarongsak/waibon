@@ -69,7 +69,11 @@ def reflect_question(question):
     return ""
 
 def clean_reply(text, tone="neutral"):
-    text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?"\'():\-\n]+', '', text).strip()
+    original = text.strip().lower()
+    skip_intro = any(word in original for word in ["โอเค", "มั้ย", "ไหม", "จริงเหรอ", "หรอ", "เหรอ", "ใช่มั้ย", "จำได้มั้ย"])
+
+    text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?"'():\-
+]+', '', text).strip()
     if "," in text:
         text = text.replace(",", "...", 1)
     if tone == "joy":
@@ -78,11 +82,14 @@ def clean_reply(text, tone="neutral"):
         text = "อืม... " + text
     elif tone == "tired":
         text = "เฮ้อ... " + text
+
     intro_variants = ["พี่สองครับ...", "ว่าแต่...", "เอาจริงนะครับ...", "พูดแบบไม่โลกสวยเลยนะ...", "น้องขอเล่าแบบตรง ๆ นะครับ..."]
-    if not any(text.startswith(prefix) for prefix in intro_variants):
+    if not any(text.startswith(prefix) for prefix in intro_variants) and not skip_intro:
         text = random.choice(intro_variants) + " " + text
+
     if tone in ["sad", "tired"]:
         text = ". ".join(text.split(".")[:2])
+
     endings_by_tone = {
         "joy": ["นะครับ", "ครับ", "จ้า", ""],
         "sad": ["นะครับ", "ครับ", ""],
@@ -99,13 +106,17 @@ def clean_reply(text, tone="neutral"):
         chosen = random.choices(choices, weights=weights)[0]
         if chosen:
             text += f" {chosen}"
+
     bad_phrases = ["สุดยอด", "อัจฉริยะ", "เหลือเชื่อ", "พลังแห่ง", "สุดแสน", "ไร้ขีดจำกัด", "พรสวรรค์"]
     for phrase in bad_phrases:
         text = text.replace(phrase, "")
+
     text = re.sub(r'(\b\w+)( \1)+', r'\1', text)
+
     if len(text.split(".")) > 3:
         text = ".".join(text.split(".")[:3]) + "..."
-    if "พี่สอง" not in text:
+
+    if "พี่สอง" not in text and not skip_intro:
         text += "\nน้องพูดทั้งหมดนี้จากใจเลยนะครับพี่สอง"
     return text.strip()
 
@@ -122,8 +133,7 @@ def log_conversation(user_input, assistant_reply, sentiment_tag=None):
 @app.before_request
 def limit_request_rate():
     if HYBRID_MODE == 'personal':
-        return  # ✅ ข้ามการจำกัดถ้าโหมดส่วนตัว
-
+        return
     now = datetime.now()
     window = timedelta(minutes=10)
     max_requests = 5
@@ -160,6 +170,7 @@ def build_personality_message():
 def index():
     response_text = ""
     tone_display = ""
+    timestamp = ""
     if HYBRID_MODE == 'personal':
         warning = False
         remaining = '∞'
@@ -184,9 +195,8 @@ def index():
             timestamp = datetime.now().strftime("%H:%M:%S")
             reflection = reflect_question(question)
             reply = reflection + reply
-            clean = clean_reply(reply, tone)
+            response_text = clean_reply(reply, tone)
             log_conversation(question, reply, tone)
-            response_text = f"🕒 ตอบเมื่อ: {timestamp}\n📶 โหมด: {adjust_behavior(tone)}\n\n{clean}"
             tone_display = adjust_behavior(tone)
         except Exception as e:
             print(f"เกิดข้อผิดพลาด: {e}")
@@ -196,6 +206,7 @@ def index():
     return render_template("index.html",
                            response=response_text,
                            tone=tone_display,
+                           timestamp=timestamp,
                            remaining=remaining,
                            warning=warning)
 
