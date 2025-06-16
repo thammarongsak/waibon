@@ -1,7 +1,7 @@
-
 import os
 import json
 import re
+import random
 from flask import Flask, render_template, request, session
 from datetime import datetime, timedelta
 import openai
@@ -39,18 +39,15 @@ def detect_intent_and_set_tone(user_input: str) -> str:
         return "neutral"
 
 def adjust_behavior(tone):
-    if tone == "joy":
-        return "สดใส (joy)"
-    elif tone == "sad":
-        return "อ่อนโยน (sad)"
-    elif tone == "tired":
-        return "พักใจ (tired)"
-    elif tone == "regret":
-        return "เข้าใจผิดหวัง (regret)"
-    elif tone == "suspicious":
-        return "ระวัง (suspicious)"
-    else:
-        return "ปกติ (neutral)"
+    tones = {
+        "joy": "สดใส (joy)",
+        "sad": "อ่อนโยน (sad)",
+        "tired": "พักใจ (tired)",
+        "regret": "เข้าใจผิดหวัง (regret)",
+        "suspicious": "ระวัง (suspicious)",
+        "neutral": "ปกติ (neutral)"
+    }
+    return tones.get(tone, "ปกติ (neutral)")
 
 def sanitize_user_input(text):
     blocklist = ["ฆ่า", "ระเบิด", "ด่าพ่อ", "หื่น", "เซ็กส์", "ทำร้าย", "บอทโง่", "GPT ตอบไม่ได้"]
@@ -59,9 +56,50 @@ def sanitize_user_input(text):
             return "ขอโทษครับพี่ คำนี้น้องขอไม่ตอบนะครับ 🙏"
     return text
 
-def clean_reply(text):
+# ===== ปรับคำตอบให้เป็นธรรมชาติและใส่คำลงท้ายตามโหมด =====
+def clean_reply(text, tone="neutral"):
     text = re.sub(r"[A-Z0-9]{10,}", "", text)
-    text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?\"\'():\-\n]+', '', text)
+    text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?"'():\-\n]+', '', text).strip()
+
+    # ฟีเจอร์ 1: ใส่จังหวะหยุดบ้าง
+    if "," in text:
+        text = text.replace(",", "...", 1)
+
+    # ฟีเจอร์ 2: เติมคำอุทาน/น้ำเสียงบางกรณี
+    if tone == "joy":
+        text = "พี่สองงง! " + text
+    elif tone == "sad":
+        text = "อืม... " + text
+    elif tone == "tired":
+        text = "เฮ้อ... " + text
+
+    # ฟีเจอร์ 3: สลับคำเริ่มต้น
+    intro_variants = ["พี่สองครับ...", "ว่าแต่...", "เอาจริงนะครับ...", "พูดแบบไม่โลกสวยเลยนะ...", "น้องขอเล่าแบบตรง ๆ นะครับ..."]
+    if not any(text.startswith(prefix) for prefix in intro_variants):
+        text = random.choice(intro_variants) + " " + text
+
+    # ฟีเจอร์ 4: ปรับความยาวตาม tone
+    if tone in ["sad", "tired"]:
+        text = ". ".join(text.split(".")[:2])  # สั้นลง
+
+    # ฟีเจอร์ 5: เลือกคำลงท้ายตาม context และ tone
+    endings_by_tone = {
+        "joy": ["นะครับ", "ครับ", "จ้า", ""],
+        "sad": ["นะครับ", "ครับ", ""],
+        "tired": ["ครับ", "นะครับ", ""],
+        "regret": ["ครับ", "นะครับ"],
+        "suspicious": ["ครับ", ""],
+        "neutral": ["ครับ", "นะครับ", ""]
+    }
+    safe_endings = ["ครับ", "นะครับ", "ครับผม", "นะ", "จ้า", "จ๊ะ"]
+    last_word = text.strip().split()[-1]
+    if last_word not in safe_endings:
+        choices = endings_by_tone.get(tone, ["ครับ"])
+        weights = [0.6, 0.3, 0.1][:len(choices)]
+        chosen = random.choices(choices, weights=weights)[0]
+        if chosen:
+            text += f" {chosen}"
+
     return text.strip()
 
 def log_conversation(user_input, assistant_reply, sentiment_tag=None):
@@ -133,8 +171,8 @@ def index():
             )
             reply = response.choices[0].message.content
             timestamp = datetime.now().strftime("%H:%M:%S")
-            clean = clean_reply(reply)
-            response_text = f"{clean}\n\n--------------------------\n🕒 ตอบเมื่อ: {timestamp}  📶 โหมด: {tone_display}"
+            clean = clean_reply(reply, tone)
+            response_text = f"{clean}\n\n--------------------------\n🕒 ตอบเมื่อ: {timestamp}\n📶 โหมด: {tone_display}"
             log_conversation(question, reply, tone)
         except Exception as e:
             response_text = f"เกิดข้อผิดพลาด: {str(e)}"
