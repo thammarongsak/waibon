@@ -54,7 +54,7 @@ def clean_reply(text, tone="neutral"):
     original = text.strip()
     lowered = original.lower()
     global last_phrases_cache
-    tone = wam.analyze_recent_tone(original)
+    tone = wam.analyze_recent_tone()
     behavior_style = wam.adjust_behavior(tone)
 
     original = text.strip()
