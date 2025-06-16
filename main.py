@@ -39,7 +39,7 @@ def detect_intent_and_set_tone(user_input: str) -> str:
         return "regret"
     elif any(kw in user_input for kw in ["โกหก", "หลอก", "ไม่จริง"]):
         return "suspicious"
-    else:
+        else:
         return "neutral"
 
 def adjust_behavior(tone):
@@ -70,7 +70,7 @@ def reflect_question(question):
         return "พี่ดูเหมือนจะเหนื่อยนะครับ... น้องอยู่ตรงนี้นะครับ\n"
     elif "ไวบอนคือใคร" in question or "ไวบอนคืออะไร" in question:
         return "น้องไวบอนคือผู้ช่วยประจำใจของพี่สอง เป็นทั้งน้องชายและเพื่อนสนิทครับ\n"
-    else:
+        else:
         return ""
 def clean_reply(text, tone="neutral"):
     text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?\"\'():\-\n]+', '', text).strip()
@@ -147,7 +147,7 @@ def log_conversation(user_input, assistant_reply, sentiment_tag=None):
 # ===== Hybrid Request Limit (ระบบจำกัดคำถามตามโหมด) =====
 @app.before_request
 def limit_request_rate():
-    if HYBRID_MODE == 'personal':
+        if HYBRID_MODE == 'personal':
         return  # โหมดส่วนตัว ไม่จำกัดคำถาม
 
     now = datetime.now()
@@ -237,7 +237,7 @@ def download_log(format):
         with open("waibon_convo.txt", "w", encoding="utf-8") as f:
             f.write(txt)
         return send_file("waibon_convo.txt", as_attachment=True)
-    else:
+        else:
         return "Invalid format", 400
 
 if __name__ == "__main__":
