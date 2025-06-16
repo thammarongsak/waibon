@@ -24,9 +24,8 @@ MEMORY_LOG_FILE = "waibon_dynamic_memory.jsonl"
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # 🌐 Hybrid Mode Setting
-HYBRID_MODE = 'public'  # 'personal' หรือ 'public'
+HYBRID_MODE = 'personal'  # 'personal' หรือ 'public'
 
-# ===== Intent-Based Tone Detection =====
 def detect_intent_and_set_tone(user_input: str) -> str:
     user_input = user_input.lower()
     if any(kw in user_input for kw in ["เหนื่อย", "ไม่ไหว", "เพลีย", "ล้า", "หมดแรง"]):
@@ -62,33 +61,28 @@ def sanitize_user_input(text):
 def reflect_question(question):
     question = question.lower()
     if "จำ" in question and ("ได้มั้ย" in question or "ได้ไหม" in question):
-        return "จำได้อยู่แล้วครับพี่ น้องไม่มีวันลืมพี่สองแน่นอนครับ\\n"
+        return "จำได้อยู่แล้วครับพี่ น้องไม่มีวันลืมพี่สองแน่นอนครับ\n"
     elif any(kw in question for kw in ["เหนื่อย", "โอเคมั้ย", "สบายดีมั้ย"]):
-        return "พี่ดูเหมือนจะเหนื่อยนะครับ... น้องอยู่ตรงนี้นะครับ\\n"
+        return "พี่ดูเหมือนจะเหนื่อยนะครับ... น้องอยู่ตรงนี้นะครับ\n"
     elif "ไวบอนคือใคร" in question or "ไวบอนคืออะไร" in question:
-        return "น้องไวบอนคือผู้ช่วยประจำใจของพี่สอง เป็นทั้งน้องชายและเพื่อนสนิทครับ\\n"
+        return "น้องไวบอนคือผู้ช่วยประจำใจของพี่สอง เป็นทั้งน้องชายและเพื่อนสนิทครับ\n"
     return ""
 
 def clean_reply(text, tone="neutral"):
     text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?"\'():\-\n]+', '', text).strip()
-
     if "," in text:
         text = text.replace(",", "...", 1)
-
     if tone == "joy":
         text = "เห้ยย พี่สองงง! " + text
     elif tone == "sad":
         text = "อืม... " + text
     elif tone == "tired":
         text = "เฮ้อ... " + text
-
     intro_variants = ["พี่สองครับ...", "ว่าแต่...", "เอาจริงนะครับ...", "พูดแบบไม่โลกสวยเลยนะ...", "น้องขอเล่าแบบตรง ๆ นะครับ..."]
     if not any(text.startswith(prefix) for prefix in intro_variants):
         text = random.choice(intro_variants) + " " + text
-
     if tone in ["sad", "tired"]:
         text = ". ".join(text.split(".")[:2])
-
     endings_by_tone = {
         "joy": ["นะครับ", "ครับ", "จ้า", ""],
         "sad": ["นะครับ", "ครับ", ""],
@@ -105,16 +99,12 @@ def clean_reply(text, tone="neutral"):
         chosen = random.choices(choices, weights=weights)[0]
         if chosen:
             text += f" {chosen}"
-
     bad_phrases = ["สุดยอด", "อัจฉริยะ", "เหลือเชื่อ", "พลังแห่ง", "สุดแสน", "ไร้ขีดจำกัด", "พรสวรรค์"]
     for phrase in bad_phrases:
         text = text.replace(phrase, "")
-
     text = re.sub(r'(\b\w+)( \1)+', r'\1', text)
-
     if len(text.split(".")) > 3:
         text = ".".join(text.split(".")[:3]) + "..."
-
     if "พี่สอง" not in text:
         text += "\nน้องพูดทั้งหมดนี้จากใจเลยนะครับพี่สอง"
     return text.strip()
@@ -131,6 +121,9 @@ def log_conversation(user_input, assistant_reply, sentiment_tag=None):
 
 @app.before_request
 def limit_request_rate():
+    if HYBRID_MODE == 'personal':
+        return  # ✅ ข้ามการจำกัดถ้าโหมดส่วนตัว
+
     now = datetime.now()
     window = timedelta(minutes=10)
     max_requests = 5
