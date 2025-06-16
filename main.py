@@ -24,7 +24,7 @@ MEMORY_LOG_FILE = "waibon_dynamic_memory.jsonl"
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # 🌐 Hybrid Mode Setting
-HYBRID_MODE = 'personal'  # 'personal' หรือ 'public'
+HYBRID_MODE = 'public'  # 'personal' หรือ 'public'
 
 # ===== Intent-Based Tone Detection =====
 def detect_intent_and_set_tone(user_input: str) -> str:
@@ -185,8 +185,12 @@ def build_personality_message():
 def index():
     response_text = ""
     tone_display = ""
-    warning = session.get("limit_warning", False)
-    remaining = 5 - len(session.get("request_times", []))
+        if HYBRID_MODE == 'personal':
+            warning = False
+            remaining = '∞'
+        else:
+            warning = session.get("limit_warning", False)
+            remaining = 5 - len(session.get("request_times", []))
 
     if request.method == "POST" and not warning:
         question = sanitize_user_input(request.form["question"])
