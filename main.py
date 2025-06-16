@@ -207,6 +207,7 @@ def index():
             clean = clean_reply(reply, tone)
             log_conversation(question, reply, tone)
         except Exception as e:
+        print(f"เกิดข้อผิดพลาด: {e}")
 
         if HYBRID_MODE == 'personal':
     return render_template("index.html",
