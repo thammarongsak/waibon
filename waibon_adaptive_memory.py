@@ -58,3 +58,21 @@ if __name__ == "__main__":
     behavior = adjust_behavior(latest_tone)
     print("โทนอารมณ์ล่าสุด:", latest_tone)
     print("ปรับสไตล์เป็น:", behavior)
+
+
+# ✨ ฟังก์ชันเพิ่มความจำและคุณลักษณะใหม่แบบมีขอบเขต
+def append_memory(new_memory):
+    with open('waibon_memory.txt', 'a', encoding='utf-8') as f:
+        f.write(f"- {new_memory}\n")
+
+def update_heart_trait(new_trait):
+    try:
+        with open('waibon_heart.json', 'r', encoding='utf-8') as f:
+            heart = json.load(f)
+        traits = set(heart.get('evolving_traits', []))
+        traits.add(new_trait)
+        heart['evolving_traits'] = list(traits)
+        with open('waibon_heart.json', 'w', encoding='utf-8') as f:
+            json.dump(heart, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f'Error updating heart: {e}')
