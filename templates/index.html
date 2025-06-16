@@ -9,23 +9,6 @@
 </head>
 <body>
     <h1>ถามอะไรก็ได้กับไวบอน 🐣</h1>
-
-    {% if tone %}
-    <div class="status-box">
-        🕹️ ตอนนี้ไวบอนอยู่ในโหมด: <strong>{{ tone }}</strong>
-    </div>
-    {% endif %}
-
-    {% if warning %}
-    <div class="status-box warning">
-        ⚠️ พี่ถามเยอะแล้วนะครับ เหลืออีก {{ remaining }} คำถามใน 10 นาทีนี้
-    </div>
-    {% elif remaining <= 2 %}
-    <div class="status-box warning">
-        ⏳ เหลืออีก {{ remaining }} คำถามใน 10 นาทีนี้ครับ
-    </div>
-    {% endif %}
-
     <form method="POST">
         <input type="text" name="question" placeholder="ไวบอนจำพี่ได้มั้ย" required>
         <button type="submit">ถามเลย</button>
@@ -34,13 +17,8 @@
     {% if response %}
     <div class="response-box">
         <strong>ไวบอนตอบ:</strong>
-        <p>{{ response|safe }}</p>
+        <p>{{ response.replace('\n', '<br>')|safe }}</p>
     </div>
     {% endif %}
-
-    <div style="margin-top: 2rem;">
-        <a href="/download_log/txt" class="btn">📄 ดาวน์โหลด .txt</a>
-        <a href="/download_log/jsonl" class="btn">🧾 ดาวน์โหลด .jsonl</a>
-    </div>
 </body>
 </html>
