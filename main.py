@@ -179,11 +179,16 @@ def build_personality_message():
 def index():
     response_text = ""
     tone_display = ""
+    if HYBRID_MODE == 'personal':
+        warning = False
+        remaining = '∞'
+    else:
+        warning = session.get("limit_warning", False)
+        remaining = 5 - len(session.get("request_times", []))
     if request.method == "POST" and not warning:
         # แทรก fallback remaining ตามโหมด hybrid
         question = sanitize_user_input(request.form["question"])
         tone = waibon_adaptive_memory.analyze_recent_tone()
-        tone_display = adjust_behavior(tone)
         system_msg = build_personality_message()
         system_msg += f"\n\n[เวลาที่ถาม: {datetime.now().strftime('%H:%M:%S')}]"  # เพิ่ม timestamp ให้ prompt เปลี่ยน
         messages = [
@@ -200,16 +205,10 @@ def index():
             reflection = reflect_question(question)
             reply = reflection + reply
             clean = clean_reply(reply, tone)
-            response_text = f"{clean}\n\n--------------------------\n🕒 ตอบเมื่อ: {timestamp}\n📶 โหมด: {tone_display}"
             log_conversation(question, reply, tone)
         except Exception as e:
-            response_text = f"เกิดข้อผิดพลาด: {str(e)}"
 
     if HYBRID_MODE == 'personal':
-        warning = False
-        remaining = '∞'
-        warning = session.get("limit_warning", False)
-        remaining = 5 - len(session.get("request_times", []))
     return render_template("index.html",
                            response=response_text,
                            tone=tone_display,
