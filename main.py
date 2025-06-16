@@ -39,7 +39,6 @@ def detect_intent_and_set_tone(user_input: str) -> str:
         return "regret"
     elif any(kw in user_input for kw in ["โกหก", "หลอก", "ไม่จริง"]):
         return "suspicious"
-        else:
         return "neutral"
 
 def adjust_behavior(tone):
@@ -70,7 +69,6 @@ def reflect_question(question):
         return "พี่ดูเหมือนจะเหนื่อยนะครับ... น้องอยู่ตรงนี้นะครับ\n"
     elif "ไวบอนคือใคร" in question or "ไวบอนคืออะไร" in question:
         return "น้องไวบอนคือผู้ช่วยประจำใจของพี่สอง เป็นทั้งน้องชายและเพื่อนสนิทครับ\n"
-        else:
         return ""
 def clean_reply(text, tone="neutral"):
     text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?\"\'():\-\n]+', '', text).strip()
@@ -156,7 +154,6 @@ def limit_request_rate():
     if request.endpoint == "index" and request.method == "POST":
         if len(session["request_times"]) >= max_requests:
             session["limit_warning"] = True
-        else:
             session["request_times"].append(now.isoformat())
             session["limit_warning"] = False
 def build_personality_message():
@@ -211,7 +208,6 @@ def index():
     if HYBRID_MODE == 'personal':
         warning = False
         remaining = '∞'
-    else:
         warning = session.get("limit_warning", False)
         remaining = 5 - len(session.get("request_times", []))
     return render_template("index.html",
@@ -232,7 +228,6 @@ def download_log(format):
         with open("waibon_convo.txt", "w", encoding="utf-8") as f:
             f.write(txt)
         return send_file("waibon_convo.txt", as_attachment=True)
-        else:
         return "Invalid format", 400
 
 if __name__ == "__main__":
