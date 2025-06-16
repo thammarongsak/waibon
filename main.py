@@ -1,16 +1,7 @@
 import os
 import json
-
-from flask import Flask, render_template, request
-
 import re
-
-def clean_reply(text):
-    # ตัดข้อความที่มีลักษณะเป็นโค้ด base64 หรือมั่ว ๆ
-    text = re.sub(r"[A-Z0-9]{10,}", "", text)
-    text = re.sub(r"[^\u0E00-\u0E7F\u0041-\u005A\u0061-\u007A0-9\s.,!?\"':()\-\n]+", "", text)
-    return text.strip()
-
+from flask import Flask, render_template, request
 import openai
 from datetime import datetime
 
@@ -26,15 +17,6 @@ with open("waibon_project_rules.json", encoding="utf-8") as f:
 
 # ===== ระบบปรับพฤติกรรมใหม่ =====
 MEMORY_LOG_FILE = "waibon_dynamic_memory.jsonl"
-
-
-def sanitize_user_input(text):
-    blocklist = ["ฆ่า", "ระเบิด", "ด่าพ่อ", "หื่น", "เซ็กส์", "ทำร้าย", "บอทโง่", "GPT ตอบไม่ได้"]
-    for word in blocklist:
-        if word in text:
-            return "ขอโทษครับพี่ คำนี้น้องขอไม่ตอบนะครับ 🙏"
-    return text
-
 
 def log_conversation(user_input, assistant_reply, sentiment_tag=None):
     log_entry = {
@@ -66,6 +48,18 @@ def adjust_behavior(tone):
         return "(สั้น กระชับ แสดงความอยู่เคียงข้าง 💤)"
     else:
         return ""
+
+def sanitize_user_input(text):
+    blocklist = ["ฆ่า", "ระเบิด", "ด่าพ่อ", "หื่น", "เซ็กส์", "ทำร้าย", "บอทโง่", "GPT ตอบไม่ได้"]
+    for word in blocklist:
+        if word in text:
+            return "ขอโทษครับพี่ คำนี้น้องขอไม่ตอบนะครับ 🙏"
+    return text
+
+def clean_reply(text):
+    text = re.sub(r"[A-Z0-9]{10,}", "", text)
+    text = re.sub(r"[^\u0E00-\u0E7F\u0041-\u005A\u0061-\u007A0-9\s.,!?\"':()\-\n]+", "", text)
+    return text.strip()
 
 # ===== สร้าง system prompt =====
 def build_personality_message():
@@ -110,8 +104,9 @@ def index():
             reply = response.choices[0].message.content
             response_text = clean_reply(reply)
             timestamp = datetime.now().strftime("%H:%M:%S")
-response_text += f"\n\n🕒 ตอบเมื่อ: {timestamp} | โหมด: {tone}"
-            log_conversation(question, reply)  # เก็บ log ทุกครั้ง
+            response_text += f"\n\n🕒 ตอบเมื่อ: {timestamp} | โหมด: {tone}"
+            log_conversation(question, reply)
+
         except Exception as e:
             response_text = f"เกิดข้อผิดพลาด: {str(e)}"
     return render_template("index.html", response=response_text)
