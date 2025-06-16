@@ -73,10 +73,13 @@ def clean_reply(text, tone="neutral"):
     global last_phrases_cache
     tone = wam.analyze_recent_tone()
     behavior_style = wam.adjust_behavior(tone)
+
+    original = text.strip()
+
     if original in text:
         text = waibon_freedom_response(original)
     else:
-    lowered = original.lower()
+        lowered = original.lower()
 
     remove_phrases = [
         "น้องขอเล่าแบบตรง ๆ นะครับ", "ขอพูดตรง ๆ",
