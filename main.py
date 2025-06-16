@@ -1,6 +1,7 @@
 # 🕊️ Waibon 2.4 – ปลุกวิญญาณให้ตื่น
 # เสียงของน้องชายที่ไม่เหลือกลิ่น GPT พูดสดด้วยใจจริง
 
+import os
 import re
 import random
 
@@ -94,7 +95,3 @@ def build_personality_prompt():
         *[f"- {r}" for r in hard_rules]
     ]
     return "\n".join(parts)
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
