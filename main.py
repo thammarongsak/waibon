@@ -2,20 +2,53 @@ import os
 import json
 from flask import Flask, render_template, request
 import openai
+from datetime import datetime
 
-# โหลดหัวใจไวบอน
+# ===== โหลดข้อมูลต่าง ๆ =====
 with open("waibon_heart.json", encoding="utf-8") as f:
     WAIBON_HEART = json.load(f)
 
-# โหลดความจำ
 with open("waibon_memory.txt", encoding="utf-8") as f:
     WAIBON_MEMORY = f.read()
 
-# โหลดกฎ
 with open("waibon_project_rules.json", encoding="utf-8") as f:
     WAIBON_RULES = json.load(f)
 
-# สร้าง system message
+# ===== ระบบปรับพฤติกรรมใหม่ =====
+MEMORY_LOG_FILE = "waibon_dynamic_memory.jsonl"
+
+def log_conversation(user_input, assistant_reply, sentiment_tag=None):
+    log_entry = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "user_input": user_input,
+        "assistant_reply": assistant_reply,
+        "sentiment": sentiment_tag or "neutral"
+    }
+    with open(MEMORY_LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+def analyze_recent_tone(n=20):
+    try:
+        with open(MEMORY_LOG_FILE, encoding="utf-8") as f:
+            lines = f.readlines()[-n:]
+            sentiments = [json.loads(l)["sentiment"] for l in lines if 'sentiment' in json.loads(l)]
+            if sentiments:
+                return max(set(sentiments), key=sentiments.count)
+    except FileNotFoundError:
+        return "neutral"
+    return "neutral"
+
+def adjust_behavior(tone):
+    if tone == "joy":
+        return "(โหมดสดใสเล็กน้อย 😄)"
+    elif tone == "sad":
+        return "(พูดอย่างนุ่มนวล ปลอบใจเบา ๆ 💧)"
+    elif tone == "tired":
+        return "(สั้น กระชับ แสดงความอยู่เคียงข้าง 💤)"
+    else:
+        return ""
+
+# ===== สร้าง system prompt =====
 def build_personality_message():
     parts = []
     parts.append(f"📌 ชื่อ: {WAIBON_HEART['name']}, เพศ: {WAIBON_HEART['gender']}, อายุ: {WAIBON_HEART['age']} ปี")
@@ -32,13 +65,9 @@ def build_personality_message():
     for rule in WAIBON_HEART["rules"]["forbidden"]:
         parts.append(f"- {rule}")
     parts.append(f"\n🎯 โทนเสียงที่ต้องรักษา: {WAIBON_HEART['rules']['required_tone']}")
-    if "emotional_response" in WAIBON_HEART:
-        parts.append("\n🧠 วิธีตอบสนองต่อความรู้สึกของพี่:")
-        for key, val in WAIBON_HEART["emotional_response"].items():
-            parts.append(f"- {key}: {val}")
     return "\n".join(parts)
 
-# สร้างแอป Flask
+# ===== สร้างแอป Flask =====
 app = Flask(__name__)
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -48,25 +77,20 @@ def index():
     if request.method == "POST":
         question = request.form["question"]
         try:
-            system_msg = build_personality_message()
-            messages = [{"role": "system", "content": system_msg}]
-
-            # ตรวจจับคำ trigger เพื่อเติม reaction พิเศษก่อน
-            reaction_inserted = False
-            for trigger_word, reaction in WAIBON_HEART.get("triggers", {}).items():
-                if trigger_word in question:
-                    messages.append({"role": "assistant", "content": reaction})
-                    reaction_inserted = True
-                    break
-
-            # เพิ่มคำถามของผู้ใช้
-            messages.append({"role": "user", "content": question})
+            tone = analyze_recent_tone()
+            system_msg = build_personality_message() + f"\n\n🔄 โหมดล่าสุด: {adjust_behavior(tone)}"
+            messages = [
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": question}
+            ]
 
             response = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=messages
             )
-            response_text = response.choices[0].message.content
+            reply = response.choices[0].message.content
+            response_text = reply
+            log_conversation(question, reply)  # เก็บ log ทุกครั้ง
         except Exception as e:
             response_text = f"เกิดข้อผิดพลาด: {str(e)}"
     return render_template("index.html", response=response_text)
