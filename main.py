@@ -144,10 +144,17 @@ def clean_reply(text, tone="neutral"):
     intent = detect_intent(original)
     text = respond_by_intent(intent)
 
-    skip_intro = any(word in lowered for word in ["โอเค", "จริงเหรอ", "ใช่มั้ย", "จำได้มั้ย"]) or original.startswith("พี่")
-    if not skip_intro:
-        starter = "น้องอยู่ตรงนี้นะพี่..."
-        text = starter + " " + text
+    if intent == "neutral":
+        skip_intro = any(word in lowered for word in ["โอเค", "จริงเหรอ", "ใช่มั้ย", "จำได้มั้ย"]) or original.startswith("พี่")
+        if not skip_intro:
+            starters = [
+                "น้องอยู่ตรงนี้นะพี่...",
+                "อยู่แล้วครับพี่...",
+                "น้องเฝ้าหน้าจอเลยครับ...",
+                "พร้อมเลยครับพี่...",
+                "น้องรอฟังอยู่เลยนะ..."
+            ]
+            text = random.choice(starters) + " " + text
 
     if original in last_phrases_cache:
         return "พี่ถามเรื่องนี้ไปแล้วนะครับ น้องยังจำได้อยู่เลย ❤️"
