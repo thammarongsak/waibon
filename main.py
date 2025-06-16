@@ -5,6 +5,7 @@ import random
 from flask import Flask, render_template, request, session
 from datetime import datetime, timedelta
 import openai
+import waibon_adaptive_memory
 
 app = Flask(__name__)
 app.secret_key = "waibon-secret-key"
@@ -58,10 +59,8 @@ def sanitize_user_input(text):
 
 # ===== ปรับคำตอบให้เป็นธรรมชาติและใส่คำลงท้ายตามโหมด =====
 def clean_reply(text, tone="neutral"):
-    text = re.sub(r"[A-Z0-9]{10,}", "", text)
     text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?\"\'():\-\n]+', '', text).strip()
-    
-    # text = re.sub(r"[^฀-๿A-Za-z0-9\s.,!?\"'():\-\n]+", '', text).strip() ไวบอนแนะนำล่าสุด
+    text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?\"\'():\-\n]+', '', text).strip()
 
     # ฟีเจอร์ 1: ใส่จังหวะหยุดบ้าง
     if "," in text:
@@ -69,7 +68,7 @@ def clean_reply(text, tone="neutral"):
 
     # ฟีเจอร์ 2: เติมคำอุทาน/น้ำเสียงบางกรณี
     if tone == "joy":
-        text = "พี่สองงง! " + text
+        text = "เห้ยย พี่สองงง! " + text
     elif tone == "sad":
         text = "อืม... " + text
     elif tone == "tired":
@@ -93,7 +92,7 @@ def clean_reply(text, tone="neutral"):
         "suspicious": ["ครับ", ""],
         "neutral": ["ครับ", "นะครับ", ""]
     }
-    safe_endings = ["ครับ", "นะครับ", "ครับผม", "นะ", "จ้า", "จ๊ะ"]
+    safe_endings = ["ครับ", "นะครับ", "ค่ะ", "ครับผม", "นะ", "จ้า", "จ๊ะ", "ฮะ"]
     last_word = text.strip().split()[-1]
     if last_word not in safe_endings:
         choices = endings_by_tone.get(tone, ["ครับ"])
@@ -157,7 +156,7 @@ def index():
 
     if request.method == "POST" and not warning:
         question = sanitize_user_input(request.form["question"])
-        tone = detect_intent_and_set_tone(question)
+        tone = waibon_adaptive_memory.analyze_recent_tone()
         tone_display = adjust_behavior(tone)
         system_msg = build_personality_message()
 
