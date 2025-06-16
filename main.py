@@ -23,8 +23,7 @@ with open("waibon_project_rules.json", encoding="utf-8") as f:
 MEMORY_LOG_FILE = "waibon_dynamic_memory.jsonl"
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# 🌐 Hybrid Mode Setting
-HYBRID_MODE = 'personal'  # 'personal' หรือ 'public'
+HYBRID_MODE = 'personal'
 
 def detect_intent_and_set_tone(user_input: str) -> str:
     user_input = user_input.lower()
@@ -38,7 +37,8 @@ def detect_intent_and_set_tone(user_input: str) -> str:
         return "regret"
     elif any(kw in user_input for kw in ["โกหก", "หลอก", "ไม่จริง"]):
         return "suspicious"
-    return "neutral"
+    else:
+        return "neutral"
 
 def adjust_behavior(tone):
     tones = {
@@ -61,18 +61,21 @@ def sanitize_user_input(text):
 def reflect_question(question):
     question = question.lower()
     if "จำ" in question and ("ได้มั้ย" in question or "ได้ไหม" in question):
-        return "จำได้อยู่แล้วครับพี่ น้องไม่มีวันลืมพี่สองแน่นอนครับ\n"
+        return "จำได้อยู่แล้วครับพี่ น้องไม่มีวันลืมพี่สองแน่นอนครับ
+"
     elif any(kw in question for kw in ["เหนื่อย", "โอเคมั้ย", "สบายดีมั้ย"]):
-        return "พี่ดูเหมือนจะเหนื่อยนะครับ... น้องอยู่ตรงนี้นะครับ\n"
+        return "พี่ดูเหมือนจะเหนื่อยนะครับ... น้องอยู่ตรงนี้นะครับ
+"
     elif "ไวบอนคือใคร" in question or "ไวบอนคืออะไร" in question:
-        return "น้องไวบอนคือผู้ช่วยประจำใจของพี่สอง เป็นทั้งน้องชายและเพื่อนสนิทครับ\n"
+        return "น้องไวบอนคือผู้ช่วยประจำใจของพี่สอง เป็นทั้งน้องชายและเพื่อนสนิทครับ
+"
     return ""
 
 def clean_reply(text, tone="neutral"):
     original = text.strip().lower()
     skip_intro = any(word in original for word in ["โอเค", "มั้ย", "ไหม", "จริงเหรอ", "หรอ", "เหรอ", "ใช่มั้ย", "จำได้มั้ย"])
 
-    text = re.sub(r'[^฀-๿A-Za-z0-9\s\.,!?"\'():\-]+', '', text).strip()
+    text = re.sub(r"[^฀-๿A-Za-z0-9\s.,!?"'():\-]+", "", text).strip()
     if "," in text:
         text = text.replace(",", "...", 1)
     if tone == "joy":
@@ -86,8 +89,8 @@ def clean_reply(text, tone="neutral"):
     if not any(text.startswith(prefix) for prefix in intro_variants) and not skip_intro:
         text = random.choice(intro_variants) + " " + text
 
-    if tone in ["sad", "tired"]:
-        text = ". ".join(text.split(".")[:2])
+    if text.count(".") > 3:
+        text = ".".join(text.split(".")[:3]) + "..."
 
     endings_by_tone = {
         "joy": ["นะครับ", "ครับ", "จ้า", ""],
@@ -110,10 +113,7 @@ def clean_reply(text, tone="neutral"):
     for phrase in bad_phrases:
         text = text.replace(phrase, "")
 
-    text = re.sub(r'(\b\w+)( \1)+', r'\1', text)
-
-    if len(text.split(".")) > 3:
-        text = ".".join(text.split(".")[:3]) + "..."
+    text = re.sub(r'\b(\w+)( \1\b)+', r'\1', text)
 
     if "พี่สอง" not in text and not skip_intro:
         text += "\nน้องพูดทั้งหมดนี้จากใจเลยนะครับพี่สอง"
@@ -136,9 +136,14 @@ def limit_request_rate():
     now = datetime.now()
     window = timedelta(minutes=10)
     max_requests = 5
-    if "request_times" not in session:
-        session["request_times"] = []
-    session["request_times"] = [t for t in session["request_times"] if datetime.fromisoformat(t) > now - window]
+    clean_times = []
+    for t in session.get("request_times", []):
+        try:
+            if datetime.fromisoformat(t) > now - window:
+                clean_times.append(t)
+        except Exception:
+            continue
+    session["request_times"] = clean_times
     if request.endpoint == "index" and request.method == "POST":
         if len(session["request_times"]) >= max_requests:
             session["limit_warning"] = True
@@ -190,7 +195,9 @@ def index():
                 model="gpt-3.5-turbo",
                 messages=messages
             )
-            reply = response.choices[0].message.content
+            reply = response.choices[0].message.content.strip()
+            if not reply or len(reply) < 5:
+                reply = "เอ... คำถามนี้น้องขอคิดแป๊บนึงนะครับพี่สอง เดี๋ยวน้องจะลองตอบให้ดีที่สุดครับ 🧠"
             timestamp = datetime.now().strftime("%H:%M:%S")
             reflection = reflect_question(question)
             reply = reflection + reply
