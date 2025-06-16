@@ -183,6 +183,7 @@ def index():
     response_text = ""
     tone_display = ""
     if request.method == "POST" and not warning:
+        # แทรก fallback remaining ตามโหมด hybrid
         if HYBRID_MODE == 'personal':
             warning = False
             remaining = '∞'
@@ -193,7 +194,6 @@ def index():
         tone = waibon_adaptive_memory.analyze_recent_tone()
         tone_display = adjust_behavior(tone)
         system_msg = build_personality_message()
-
         system_msg += f"\n\n[เวลาที่ถาม: {datetime.now().strftime('%H:%M:%S')}]"  # เพิ่ม timestamp ให้ prompt เปลี่ยน
         messages = [
             {"role": "system", "content": system_msg},
