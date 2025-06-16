@@ -189,7 +189,7 @@ def sanitize_user_input(text):
 
 def clean_reply(text):
     text = re.sub(r"[A-Z0-9]{10,}", "", text)
-    text = re.sub(r"[^฀-๿A-Za-z0-9\s.,!?"':()\-\n]+", "", text)
+    text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?\"\'():\-\n]+', '', text)
     return text.strip()
 
 def log_conversation(user_input, assistant_reply, sentiment_tag=None):
