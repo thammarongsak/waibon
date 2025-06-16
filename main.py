@@ -184,12 +184,6 @@ def index():
     tone_display = ""
     if request.method == "POST" and not warning:
         # แทรก fallback remaining ตามโหมด hybrid
-        if HYBRID_MODE == 'personal':
-            warning = False
-            remaining = '∞'
-        else:
-            warning = session.get("limit_warning", False)
-            remaining = 5 - len(session.get("request_times", []))
         question = sanitize_user_input(request.form["question"])
         tone = waibon_adaptive_memory.analyze_recent_tone()
         tone_display = adjust_behavior(tone)
@@ -199,7 +193,6 @@ def index():
             {"role": "system", "content": system_msg},
             {"role": "user", "content": question}
         ]
-
         try:
             response = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
@@ -215,6 +208,12 @@ def index():
         except Exception as e:
             response_text = f"เกิดข้อผิดพลาด: {str(e)}"
 
+    if HYBRID_MODE == 'personal':
+        warning = False
+        remaining = '∞'
+    else:
+        warning = session.get("limit_warning", False)
+        remaining = 5 - len(session.get("request_times", []))
     return render_template("index.html",
                            response=response_text,
                            tone=tone_display,
