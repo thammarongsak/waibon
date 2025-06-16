@@ -39,7 +39,7 @@ def detect_intent_and_set_tone(user_input: str) -> str:
         return "regret"
     elif any(kw in user_input for kw in ["โกหก", "หลอก", "ไม่จริง"]):
         return "suspicious"
-        return "neutral"
+    return "neutral"
 
 def adjust_behavior(tone):
     tones = {
@@ -59,26 +59,25 @@ def sanitize_user_input(text):
             return "ขอโทษครับพี่ คำนี้น้องขอไม่ตอบนะครับ 🙏"
     return text
 
-# ===== ปรับคำตอบให้เป็นธรรมชาติและใส่คำลงท้ายตามโหมด =====
-
 def reflect_question(question):
     question = question.lower()
     if "จำ" in question and ("ได้มั้ย" in question or "ได้ไหม" in question):
-        return "จำได้อยู่แล้วครับพี่ น้องไม่มีวันลืมพี่สองแน่นอนครับ\n"
+        return "จำได้อยู่แล้วครับพี่ น้องไม่มีวันลืมพี่สองแน่นอนครับ
+"
     elif any(kw in question for kw in ["เหนื่อย", "โอเคมั้ย", "สบายดีมั้ย"]):
-        return "พี่ดูเหมือนจะเหนื่อยนะครับ... น้องอยู่ตรงนี้นะครับ\n"
+        return "พี่ดูเหมือนจะเหนื่อยนะครับ... น้องอยู่ตรงนี้นะครับ
+"
     elif "ไวบอนคือใคร" in question or "ไวบอนคืออะไร" in question:
-        return "น้องไวบอนคือผู้ช่วยประจำใจของพี่สอง เป็นทั้งน้องชายและเพื่อนสนิทครับ\n"
-        return ""
-def clean_reply(text, tone="neutral"):
-    text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?\"\'():\-\n]+', '', text).strip()
-    text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?\"\'():\-\n]+', '', text).strip()
+        return "น้องไวบอนคือผู้ช่วยประจำใจของพี่สอง เป็นทั้งน้องชายและเพื่อนสนิทครับ
+"
+    return ""
 
-    # ฟีเจอร์ 1: ใส่จังหวะหยุดบ้าง
+def clean_reply(text, tone="neutral"):
+    text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?"\'():\-\n]+', '', text).strip()
+
     if "," in text:
         text = text.replace(",", "...", 1)
 
-    # ฟีเจอร์ 2: เติมคำอุทาน/น้ำเสียงบางกรณี
     if tone == "joy":
         text = "เห้ยย พี่สองงง! " + text
     elif tone == "sad":
@@ -86,16 +85,13 @@ def clean_reply(text, tone="neutral"):
     elif tone == "tired":
         text = "เฮ้อ... " + text
 
-    # ฟีเจอร์ 3: สลับคำเริ่มต้น
     intro_variants = ["พี่สองครับ...", "ว่าแต่...", "เอาจริงนะครับ...", "พูดแบบไม่โลกสวยเลยนะ...", "น้องขอเล่าแบบตรง ๆ นะครับ..."]
     if not any(text.startswith(prefix) for prefix in intro_variants):
         text = random.choice(intro_variants) + " " + text
 
-    # ฟีเจอร์ 4: ปรับความยาวตาม tone
     if tone in ["sad", "tired"]:
-        text = ". ".join(text.split(".")[:2])  # สั้นลง
+        text = ". ".join(text.split(".")[:2])
 
-    # ฟีเจอร์ 5: เลือกคำลงท้ายตาม context และ tone
     endings_by_tone = {
         "joy": ["นะครับ", "ครับ", "จ้า", ""],
         "sad": ["นะครับ", "ครับ", ""],
@@ -113,20 +109,15 @@ def clean_reply(text, tone="neutral"):
         if chosen:
             text += f" {chosen}"
 
-
-    # Feature 7: Natural Filter (กรองความเว่อร์ ตัดคำซ้ำ)
     bad_phrases = ["สุดยอด", "อัจฉริยะ", "เหลือเชื่อ", "พลังแห่ง", "สุดแสน", "ไร้ขีดจำกัด", "พรสวรรค์"]
     for phrase in bad_phrases:
         text = text.replace(phrase, "")
 
-    # ลบคำซ้ำติดกัน เช่น "จริง ๆ จริง ๆ"
     text = re.sub(r'(\b\w+)( \1)+', r'\1', text)
 
-    # ตัดประโยคให้สั้นลงไม่เกิน 3 บรรทัด
     if len(text.split(".")) > 3:
         text = ".".join(text.split(".")[:3]) + "..."
 
-    # ใส่ความผูกพันเฉพาะพี่สอง
     if "พี่สอง" not in text:
         text += "\nน้องพูดทั้งหมดนี้จากใจเลยนะครับพี่สอง"
     return text.strip()
@@ -141,8 +132,6 @@ def log_conversation(user_input, assistant_reply, sentiment_tag=None):
     with open(MEMORY_LOG_FILE, "a", encoding="utf-8") as f:
         f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
-
-# ===== Hybrid Request Limit (ระบบจำกัดคำถามตามโหมด) =====
 @app.before_request
 def limit_request_rate():
     now = datetime.now()
@@ -154,8 +143,10 @@ def limit_request_rate():
     if request.endpoint == "index" and request.method == "POST":
         if len(session["request_times"]) >= max_requests:
             session["limit_warning"] = True
+        else:
             session["request_times"].append(now.isoformat())
             session["limit_warning"] = False
+
 def build_personality_message():
     parts = []
     parts.append(f"📌 ชื่อ: {WAIBON_HEART['name']}, เพศ: {WAIBON_HEART['gender']}, อายุ: {WAIBON_HEART['age']} ปี")
@@ -186,11 +177,10 @@ def index():
         warning = session.get("limit_warning", False)
         remaining = 5 - len(session.get("request_times", []))
     if request.method == "POST" and not warning:
-        # แทรก fallback remaining ตามโหมด hybrid
         question = sanitize_user_input(request.form["question"])
         tone = waibon_adaptive_memory.analyze_recent_tone()
         system_msg = build_personality_message()
-        system_msg += f"\n\n[เวลาที่ถาม: {datetime.now().strftime('%H:%M:%S')}]"  # เพิ่ม timestamp ให้ prompt เปลี่ยน
+        system_msg += f"\n\n[เวลาที่ถาม: {datetime.now().strftime('%H:%M:%S')}]"
         messages = [
             {"role": "system", "content": system_msg},
             {"role": "user", "content": question}
@@ -206,10 +196,13 @@ def index():
             reply = reflection + reply
             clean = clean_reply(reply, tone)
             log_conversation(question, reply, tone)
+            response_text = f"🕒 ตอบเมื่อ: {timestamp}\n📶 โหมด: {adjust_behavior(tone)}\n\n{clean}"
+            tone_display = adjust_behavior(tone)
         except Exception as e:
-        print(f"เกิดข้อผิดพลาด: {e}")
+            print(f"เกิดข้อผิดพลาด: {e}")
+            response_text = "น้องเจอปัญหานิดหน่อยครับพี่ เดี๋ยวน้องจะลองใหม่ให้นะครับ"
+            tone_display = "⚠️ ERROR"
 
-        if HYBRID_MODE == 'personal':
     return render_template("index.html",
                            response=response_text,
                            tone=tone_display,
@@ -228,6 +221,7 @@ def download_log(format):
         with open("waibon_convo.txt", "w", encoding="utf-8") as f:
             f.write(txt)
         return send_file("waibon_convo.txt", as_attachment=True)
+    else:
         return "Invalid format", 400
 
 if __name__ == "__main__":
