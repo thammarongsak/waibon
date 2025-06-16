@@ -36,7 +36,9 @@ def index():
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    question = request.form.get("question", "")
+    question = request.form.get("question", "").strip()
+    if not question:
+        return render_template("index.html", response="พี่พิมพ์คำถามมาก่อนนะครับ ❤️")
     reply = clean_reply(question)
     return render_template("index.html", response=reply)
 
@@ -49,13 +51,13 @@ def waibon_freedom_response(user_input):
 
 def clean_reply(text, tone="neutral"):
     global last_phrases_cache
-    tone = wam.analyze_recent_tone()
+    tone = wam.analyze_recent_tone(original)
     behavior_style = wam.adjust_behavior(tone)
 
     original = text.strip()
     lowered = original.lower()
 
-    if original in text:
+    if any(trigger in lowered for trigger in ["อยู่มั้ย", "ในนี้ยัง", "เหนื่อย", "ไม่ไหว", "ดีใจ", "เหงา", "เศร้า"]):
         text = waibon_freedom_response(original)
     else:
         pass
@@ -64,6 +66,12 @@ def clean_reply(text, tone="neutral"):
     if not skip_intro:
         starter = "น้องอยู่ตรงนี้นะพี่..."
         text = starter + " " + text
+
+    
+    if original in last_phrases_cache:
+        return "พี่ถามเรื่องนี้ไปแล้วนะครับ น้องยังจำได้อยู่เลย ❤️"
+    else:
+        last_phrases_cache.add(original)
 
     wam.log_conversation(original, text, sentiment_tag=tone)
 
