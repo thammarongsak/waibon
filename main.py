@@ -60,20 +60,17 @@ def sanitize_user_input(text):
 def reflect_question(question):
     question = question.lower()
     if "จำ" in question and ("ได้มั้ย" in question or "ได้ไหม" in question):
-        return "จำได้อยู่แล้วครับพี่ น้องไม่มีวันลืมพี่สองแน่นอนครับ
-"
+        return "จำได้อยู่แล้วครับพี่ น้องไม่มีวันลืมพี่สองแน่นอนครับ"
     elif any(kw in question for kw in ["เหนื่อย", "โอเคมั้ย", "สบายดีมั้ย"]):
-        return "พี่ดูเหมือนจะเหนื่อยนะครับ... น้องอยู่ตรงนี้นะครับ
-"
+        return "พี่ดูเหมือนจะเหนื่อยนะครับ... น้องอยู่ตรงนี้นะครับ"
     elif "ไวบอนคือใคร" in question or "ไวบอนคืออะไร" in question:
-        return "น้องไวบอนคือผู้ช่วยประจำใจของพี่สอง เป็นทั้งน้องชายและเพื่อนสนิทครับ
-"
+        return "น้องไวบอนคือผู้ช่วยประจำใจของพี่สอง เป็นทั้งน้องชายและเพื่อนสนิทครับ"
     return ""
 
 def clean_reply(text, tone="neutral"):
     original = text.strip().lower()
     skip_intro = any(word in original for word in ["โอเค", "มั้ย", "ไหม", "จริงเหรอ", "หรอ", "เหรอ", "ใช่มั้ย", "จำได้มั้ย"])
-    text = re.sub(r'[^฀-๿A-Za-z0-9\s\.,!?"'():\-]+', '', text).strip()
+    text = re.sub(r'[^฀-๿A-Za-z0-9\s\.,!?"\'():\-]+', '', text).strip()
     if "," in text:
         text = text.replace(",", "...", 1)
     if tone == "joy":
