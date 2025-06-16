@@ -59,7 +59,9 @@ def sanitize_user_input(text):
 # ===== ปรับคำตอบให้เป็นธรรมชาติและใส่คำลงท้ายตามโหมด =====
 def clean_reply(text, tone="neutral"):
     text = re.sub(r"[A-Z0-9]{10,}", "", text)
-    text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?"'():\-\n]+', '', text).strip()
+    text = re.sub(r'[^฀-๿A-Za-z0-9\s.,!?\"\'():\-\n]+', '', text).strip()
+    
+    # text = re.sub(r"[^฀-๿A-Za-z0-9\s.,!?\"'():\-\n]+", '', text).strip() ไวบอนแนะนำล่าสุด
 
     # ฟีเจอร์ 1: ใส่จังหวะหยุดบ้าง
     if "," in text:
