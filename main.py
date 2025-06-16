@@ -33,7 +33,8 @@ def index():
 @app.route("/ask", methods=["POST"])
 def ask():
     question = request.form.get("question", "")
-    return clean_reply(question)
+    reply = clean_reply(question)
+    return render_template("index.html", response=reply)
 
 def clean_reply(text, tone="neutral"):
     global last_phrases_cache
