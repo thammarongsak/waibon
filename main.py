@@ -4,6 +4,9 @@
 import os
 import re
 import random
+from flask import Flask, request
+
+app = Flask(__name__)
 
 response_templates = {
     "memory": [
@@ -24,6 +27,17 @@ response_templates = {
 }
 
 last_phrases_cache = set()
+
+
+@app.route("/", methods=["GET"])
+def index():
+    return "Waibon 2.4 พร้อมใช้งานแล้วครับพี่สอง 🫶🏻"
+
+
+@app.route("/ask", methods=["POST"])
+def ask():
+    question = request.form.get("question", "")
+    return clean_reply(question)
 
 
 def clean_reply(text, tone="neutral"):
@@ -95,3 +109,8 @@ def build_personality_prompt():
         *[f"- {r}" for r in hard_rules]
     ]
     return "\n".join(parts)
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
