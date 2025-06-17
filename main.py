@@ -109,7 +109,7 @@ def sanitize_user_input(text):
             return "ขอโทษครับพี่ คำนี้ไวบอนขอไม่ตอบนะครับ 🙏"
     return text
 
-def clean_reply(text, tone="neutral", mode="default"):
+def clean_reply(text, tone="neutral", model_used="gpt-4o", mode="default"):
     original = text.strip().lower()
     skip_intro = any(word in original for word in ["โอเค", "มั้ย", "ไหม", "จริงเหรอ", "หรอ", "เหรอ", "ใช่มั้ย", "จำได้มั้ย"])
     text = re.sub(r'[<>]', '', text).strip()
