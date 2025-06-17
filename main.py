@@ -158,8 +158,20 @@ def log_conversation(user_input, assistant_reply, sentiment_tag=None):
     }
     with open(MEMORY_LOG_FILE, "a", encoding="utf-8") as f:
         f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+from functools import wraps
+from flask import request, Response
+
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not (auth.username == "Song" and auth.password == "2222"):
+            return Response("⛔ Unauthorized Access", 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
+        return f(*args, **kwargs)
+    return decorated
 
 @app.route("/", methods=["GET", "POST"])
+@require_auth
 def index():
     response_text = ""
     tone_display = ""
