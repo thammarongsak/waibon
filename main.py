@@ -27,6 +27,24 @@ MEMORY_LOG_FILE = "waibon_dynamic_memory.jsonl"
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 HYBRID_MODE = 'personal'
+PERSONALITY_CACHE = None
+
+def build_personality_message():
+    description = WAIBON_STATIC.get("description", "")
+    memory_lines = "\n".join(["- " + mem for mem in WAIBON_STATIC.get("memory", [])])
+    rules = "\n".join([
+        "🛑 ห้าม: " + ", ".join(WAIBON_STATIC["rules"].get("forbidden", [])),
+        "✅ ต้องมี: " + WAIBON_STATIC["rules"].get("required_tone", "")
+    ])
+    return f"""ไวบอนคือน้องชายของพี่สองที่พูดด้วยใจจริง
+{description}
+
+สิ่งที่ไวบอนจำได้:
+{memory_lines}
+
+กฎที่ไวบอนยึดถือ:
+{rules}
+"""
 
 def choose_model_by_question(text: str) -> str:
     text = text.lower()
@@ -36,8 +54,6 @@ def choose_model_by_question(text: str) -> str:
         return "gpt-4o"
     else:
         return os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
-
-PERSONALITY_CACHE = None
 
 def detect_intent_and_set_tone(user_input: str) -> str:
     user_input = user_input.lower()
@@ -95,7 +111,7 @@ def wrap_question(question):
 def clean_reply(text, tone="neutral", mode="default"):
     original = text.strip().lower()
     skip_intro = any(word in original for word in ["โอเค", "มั้ย", "ไหม", "จริงเหรอ", "หรอ", "เหรอ", "ใช่มั้ย", "จำได้มั้ย"])
-    text = re.sub(r'[<>]', '', text).strip()  # กรอง script injection แต่ไม่ลบ emoji
+    text = re.sub(r'[<>]', '', text).strip()
     if "," in text:
         text = text.replace(",", "...", 1)
     if tone == "joy":
@@ -152,7 +168,10 @@ def index():
         remaining = '∞'
     else:
         warning = session.get("limit_warning", False)
-        remaining = 5 - len(session.get("request_times", []))
+        session_times = session.get("request_times", [])
+        session["request_times"] = session_times + [datetime.now().isoformat()]
+        remaining = 5 - len(session["request_times"])
+
     if request.method == "POST" and not warning:
         question = sanitize_user_input(request.form.get("question", "").strip())
         tone = detect_intent_and_set_tone(question)
@@ -168,7 +187,7 @@ def index():
                 model=model_used,
                 messages=messages
             )
-            reply = response.choices[0].message.content.strip()
+            reply = response.choices[0].message.content.strip() if response.choices else "..."
             if not reply or len(reply) < 5:
                 reply = "เอ... คำถามนี้น้องขอคิดแป๊บนึงนะครับพี่สอง เดี๋ยวน้องจะลองตอบให้ดีที่สุดครับ 🧠"
             timestamp = datetime.now().strftime("%H:%M:%S")
