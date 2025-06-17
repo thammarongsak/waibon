@@ -65,6 +65,18 @@ def choose_model_by_question(text: str) -> str:
     else:
         return os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
 
+def parse_model_selector(message: str):
+    message = message.strip()
+    
+    if message.startswith("@3.5"):
+        return "gpt-3.5-turbo", message.replace("@3.5", "", 1).strip()
+    elif message.startswith("@4o"):
+        return "gpt-4o", message.replace("@4o", "", 1).strip()
+    elif message.startswith("@4"):
+        return "gpt-4", message.replace("@4", "", 1).strip()
+    else:
+        return None, message.strip()
+
 def detect_intent_and_set_tone(user_input: str) -> str:
     user_input = user_input.lower()
     if any(kw in user_input for kw in ["เหนื่อย", "ไม่ไหว", "เพลีย", "ล้า", "หมดแรง"]):
@@ -164,7 +176,9 @@ def index():
         remaining = 5 - len(session["request_times"])
 
     if request.method == "POST" and not warning:
-        question = sanitize_user_input(request.form.get("question", "").strip())
+        raw_input = request.form.get("question", "").strip()
+        model_pref, cleaned_input = parse_model_selector(raw_input)
+        question = sanitize_user_input(cleaned_input)
         tone = detect_intent_and_set_tone(question)
         system_msg = build_personality_message()
         system_msg += f"\n\n[เวลาที่ถาม: {datetime.now().strftime('%H:%M:%S')}]"
@@ -174,7 +188,7 @@ def index():
             {"role": "user", "content": question.strip()}  # ไม่ใช้ wrap_question แล้ว
         ]
         try:
-            model_used = choose_model_by_question(question)
+            model_used = model_pref or choose_model_by_question(question)
             response = openai.chat.completions.create(
                 model=model_used,
                 messages=messages
