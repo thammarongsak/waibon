@@ -1,22 +1,34 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>Waibon GPT</title>
+  <title>ถามอะไรก็ได้กับไวบอน 🤖</title>
   <style>
     body {
       font-family: sans-serif;
       padding: 40px;
+      background-color: #f9f9f9;
     }
-    .box {
+    input[type="text"] {
+      width: 300px;
+      padding: 8px;
+      font-size: 16px;
+    }
+    button {
+      padding: 8px 12px;
+      font-size: 16px;
+    }
+    .response-box {
       margin-top: 20px;
-      padding: 10px;
-      background-color: #f3f3f3;
-      border-radius: 8px;
+      padding: 15px;
+      background-color: #fff;
+      border-left: 5px solid #2196F3;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-    .status {
+    .status-box {
       margin-top: 10px;
-      color: #444;
+      font-size: 14px;
+      color: #555;
     }
     .warning {
       color: red;
@@ -27,22 +39,22 @@
   <h1>ถามอะไรก็ได้กับไวบอน 🐣</h1>
 
   <form method="POST">
-    <input name="question" placeholder="พิมพ์คำถามที่นี่" style="width:300px;">
+    <input type="text" name="question" placeholder="พิมพ์คำถามที่นี่...">
     <button type="submit">ถามเลย</button>
   </form>
 
   {% if timestamp %}
-    <p class="status">🕒 ตอบเมื่อ: {{ timestamp }}</p>
+    <div class="status-box">🕒 ตอบเมื่อ: {{ timestamp }}</div>
   {% endif %}
   {% if tone %}
-    <p class="status">📶 โหมด: {{ tone }}</p>
+    <div class="status-box">📶 โหมด: {{ tone }}</div>
   {% endif %}
   {% if warning %}
-    <p class="status warning">⚠️ พี่ถามเยอะแล้วนะครับ เหลืออีก {{ remaining }} คำถามในรอบนี้</p>
+    <div class="status-box warning">⚠️ พี่ถามเยอะแล้วนะครับ เหลืออีก {{ remaining }} คำถามในรอบนี้</div>
   {% endif %}
 
   {% if response %}
-    <div class="box">
+    <div class="response-box">
       <h3>ไวบอนตอบ:</h3>
       <p>{{ response }}</p>
     </div>
