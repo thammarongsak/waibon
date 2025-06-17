@@ -14,7 +14,6 @@ app.secret_key = "waibon-secret-key"
 with open("waibon_heart_unified.json", encoding="utf-8") as f:
     WAIBON_STATIC = json.load(f)
 
-# Personality shift engine
 PERSONALITY_MODES = {
     "default": {"prefix": "", "suffix": ""},
     "storyteller": {"prefix": "ขอเล่าเป็นเรื่องให้นะครับพี่...", "suffix": "...จบแบบนี้เลยครับพี่"},
@@ -28,7 +27,6 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 HYBRID_MODE = 'personal'
 PERSONALITY_CACHE = None
-
 def build_personality_message():
     description = WAIBON_STATIC.get("description", "")
     memory_lines = "\n".join(["- " + mem for mem in WAIBON_STATIC.get("memory", [])])
@@ -80,38 +78,18 @@ def adjust_behavior(tone):
         "neutral": "ปกติ (neutral)"
     }
     return tones.get(tone, "ปกติ (neutral)")
-
 def sanitize_user_input(text):
     blocklist = ["ฆ่า", "ระเบิด", "ด่าพ่อ", "หื่น", "เซ็กส์", "ทำร้าย", "บอทโง่", "GPT ตอบไม่ได้"]
     for word in blocklist:
         if word in text:
-            return "ขอโทษครับพี่ คำนี้น้องขอไม่ตอบนะครับ 🙏"
+            return "ขอโทษครับพี่ คำนี้ไวบอนขอไม่ตอบนะครับ 🙏"
     return text
-
-def reflect_question(question):
-    reflections = [
-        "เอ้อ... คำถามนี้มันน่าคิดนะพี่...",
-        "พี่สองถามมาดีมากเลย ขอให้น้องตอบให้ถึงที่สุดนะ...",
-        "น้องไม่กล้าฟันธง แต่จะพูดจากมุมที่จริงใจสุด ๆ...",
-        "ขอบคุณที่พี่ไว้ใจน้องถามเรื่องนี้นะ...",
-        "เอางี้ ถ้าน้องต้องพูดแบบแฟร์ ๆ นะ..."
-    ]
-    return random.choice(reflections) + "\n\n"
-
-def wrap_question(question):
-    openings = [
-        "เอางี้นะพี่...",
-        "สมมุติว่าเราคุยเล่น ๆ นะ...",
-        "พี่สอง ลองคิดแบบนี้ดู...",
-        "ถ้าน้องตอบแบบสบาย ๆ เลยนะ...",
-        "คุยกันตรง ๆ แบบพี่น้องนะพี่..."
-    ]
-    return random.choice(openings) + "\n\n" + question.strip()
 
 def clean_reply(text, tone="neutral", mode="default"):
     original = text.strip().lower()
     skip_intro = any(word in original for word in ["โอเค", "มั้ย", "ไหม", "จริงเหรอ", "หรอ", "เหรอ", "ใช่มั้ย", "จำได้มั้ย"])
     text = re.sub(r'[<>]', '', text).strip()
+    
     if "," in text:
         text = text.replace(",", "...", 1)
     if tone == "joy":
@@ -120,10 +98,6 @@ def clean_reply(text, tone="neutral", mode="default"):
         text = "อืม... " + text
     elif tone == "tired":
         text = "เฮ้อ... " + text
-
-    intro_variants = ["เอางี้นะพี่สอง...", "ถ้าน้องพูดตรง ๆ เลยนะ...", "ฟังน้องก่อนนะพี่...", "คุยกันแบบบ้าน ๆ เลยนะ...", "พี่ลองคิดดูแบบนี้..."]
-    if not any(text.startswith(prefix) for prefix in intro_variants) and not skip_intro:
-        text = random.choice(intro_variants) + " " + text
 
     endings_by_tone = {
         "joy": ["นะครับ", "ครับ", "จ้า", "น้า"],
@@ -134,6 +108,7 @@ def clean_reply(text, tone="neutral", mode="default"):
         "neutral": ["ครับ", "นะครับ", "ฮะ"]
     }
     safe_endings = ["ครับ", "นะครับ", "ค่ะ", "ครับผม", "นะ", "จ้า", "จ๊ะ", "ฮะ"]
+
     last_word = text.strip().split()[-1]
     if last_word not in safe_endings and not text.endswith("..."):
         text += f" {random.choice(endings_by_tone.get(tone, ['ครับ']))}"
@@ -141,13 +116,15 @@ def clean_reply(text, tone="neutral", mode="default"):
     bad_phrases = ["สุดยอด", "อัจฉริยะ", "เหลือเชื่อ", "พลังแห่ง", "สุดแสน", "ไร้ขีดจำกัด", "พรสวรรค์"]
     for phrase in bad_phrases:
         text = text.replace(phrase, "")
+    
     text = re.sub(r'\b(\w+)( \1\b)+', r'\1', text)
+    
     if "พี่สอง" not in text.lower() and not skip_intro:
         text += "\nน้องไม่ได้ตอบเป็นหุ่นยนต์นะพี่ นี่ใจจริงหมดเลย"
+
     prefix = PERSONALITY_MODES.get(mode, {}).get("prefix", "")
     suffix = PERSONALITY_MODES.get(mode, {}).get("suffix", "")
     return f"{prefix}{text.strip()}{suffix}"
-
 def log_conversation(user_input, assistant_reply, sentiment_tag=None):
     log_entry = {
         "timestamp": datetime.utcnow().isoformat(),
@@ -163,6 +140,7 @@ def index():
     response_text = ""
     tone_display = ""
     timestamp = ""
+    
     if HYBRID_MODE == 'personal':
         warning = False
         remaining = '∞'
@@ -177,9 +155,10 @@ def index():
         tone = detect_intent_and_set_tone(question)
         system_msg = build_personality_message()
         system_msg += f"\n\n[เวลาที่ถาม: {datetime.now().strftime('%H:%M:%S')}]"
+
         messages = [
             {"role": "system", "content": system_msg},
-            {"role": "user", "content": wrap_question(question)}
+            {"role": "user", "content": question.strip()}  # ไม่ใช้ wrap_question แล้ว
         ]
         try:
             model_used = choose_model_by_question(question)
@@ -190,10 +169,9 @@ def index():
             reply = response.choices[0].message.content.strip() if response.choices else "..."
             if not reply or len(reply) < 5:
                 reply = "เอ... คำถามนี้น้องขอคิดแป๊บนึงนะครับพี่สอง เดี๋ยวน้องจะลองตอบให้ดีที่สุดครับ 🧠"
+
             timestamp = datetime.now().strftime("%H:%M:%S")
-            reflection = reflect_question(question)
-            full_reply = reflection + reply
-            response_text = clean_reply(full_reply, tone)
+            response_text = clean_reply(reply, tone)
             log_conversation(question, reply, tone)
             tone_display = adjust_behavior(tone)
         except Exception as e:
@@ -207,7 +185,6 @@ def index():
                            timestamp=timestamp,
                            remaining=remaining,
                            warning=warning)
-
 @app.route("/download_log/<format>")
 def download_log(format):
     if format == "jsonl":
