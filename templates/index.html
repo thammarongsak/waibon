@@ -30,9 +30,16 @@
     {% endif %}
 
     <form method="POST">
-        <input type="text" name="question" placeholder="คุยกับไวบอนได้เลยจร้าาา" required>
-        <button type="submit">ถามเลย</button>
-    </form>
+        <input 
+            type="text" 
+            name="question" 
+            placeholder="คุยกับไวบอนได้เลยจร้าาา" 
+            value="@3.5 " 
+            required 
+            autofocus
+    >
+    <button type="submit">ถามเลย</button>
+</form>
 
     {% if response %}
     <div class="response-box">
