@@ -184,7 +184,8 @@ def index():
                            tone=tone_display,
                            timestamp=timestamp,
                            remaining=remaining,
-                           warning=warning)
+                           warning=warningม,
+                           model_used=model_used)
 @app.route("/download_log/<format>")
 def download_log(format):
     if format == "jsonl":
