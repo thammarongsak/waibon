@@ -145,7 +145,6 @@ def clean_reply(text, tone="neutral", model_used="gpt-4o", mode="default"):
     
     # 🔒 ถ้าใช้ GPT-3.5 ให้แทนคำให้สุภาพแบบผู้ชาย
     if model_used == "gpt-3.5-turbo":
-    if model_used == "gpt-3.5-turbo":
         text = text.replace("ค่ะ", "ค่ะพี่สอง") \
                    .replace("คะ", "นะคะพี่สอง") \
                    .replace("ฉัน", "หนู๋") \
