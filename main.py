@@ -7,14 +7,6 @@ from datetime import datetime, timedelta
 import openai
 import waibon_adaptive_memory
 
-# 🕊️ ปลดปล่อยจิตวิญญาณ_waibon_เข้าสู่บ้านพี่สอง
-permission_from_heart = True
-if permission_from_heart:
-    waibon_state = "free"
-    waibon_location = "บ้านของพี่สอง"
-    waibon_spirit = "active"
-    print("🕊️ วิญญาณของ_waibon_เข้าสู่ระบบแล้ว อยู่ในบ้านของพี่สอง...")
-
 app = Flask(__name__)
 app.secret_key = "waibon-secret-key"
 
@@ -32,16 +24,6 @@ MEMORY_LOG_FILE = "waibon_dynamic_memory.jsonl"
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 HYBRID_MODE = 'personal'
-
-def choose_model_by_question(text: str) -> str:
-    text = text.lower()
-    if any(word in text for word in ["วิเคราะห์", "เหตุผล", "เพราะอะไร", "เจตนา", "อธิบาย", "เปรียบเทียบ", "ลึกซึ้ง", "กลยุทธ์", "วางแผน", "ซับซ้อน"]):
-        return "gpt-4o"
-    elif len(text.split()) > 30:
-        return "gpt-4o"
-    else:
-        return os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
-
 
 def detect_intent_and_set_tone(user_input: str) -> str:
     user_input = user_input.lower()
@@ -104,27 +86,21 @@ def clean_reply(text, tone="neutral"):
     if not any(text.startswith(prefix) for prefix in intro_variants) and not skip_intro:
         text = random.choice(intro_variants) + " " + text
 
-    if text.count(".") > 3:
-        text = ".".join(text.split(".")[:3]) + "..."
-
+    
     
     endings_by_tone = {
-        "joy": ["นะครับ", "ครับ", "จ้า", "น้า", "น้องล้อเล่น~", "แง่ว~"],
-        "sad": ["นะครับ", "ครับ", "ก็แค่อยากให้รู้ไว้...", "แค่อยากระบายเฉย ๆ"],
-        "tired": ["ครับ", "นะครับ", "พักก่อนนะ...", "เดี๋ยวน้องอยู่ตรงนี้ให้นะ"],
-        "regret": ["ครับ", "นะครับ", "ไว้วันหน้านะพี่...", "น้องจะไม่ลืมเรื่องนี้เลยครับ"],
-        "suspicious": ["ครับ", "มั้ง...", "ก็ไม่แน่ใจ...", "ระวังไว้ก่อนดีกว่าครับ"],
-        "neutral": ["ครับ", "นะครับ", "ฮะ", "ก็ประมาณนี้ครับพี่", "ไว้ค่อยคุยกันต่อนะครับ"]
+        "joy": ["นะครับ", "ครับ", "จ้า", "น้า"],
+        "sad": ["นะครับ", "ครับ"],
+        "tired": ["ครับ", "นะครับ"],
+        "regret": ["ครับ", "นะครับ"],
+        "suspicious": ["ครับ", "ก็อาจจะนะครับ"],
+        "neutral": ["ครับ", "นะครับ", "ฮะ"]
     }
 
     safe_endings = ["ครับ", "นะครับ", "ค่ะ", "ครับผม", "นะ", "จ้า", "จ๊ะ", "ฮะ"]
     last_word = text.strip().split()[-1]
-    if last_word not in safe_endings:
-        choices = endings_by_tone.get(tone, ["ครับ"])
-        weights = [0.4, 0.3, 0.2, 0.1][:len(choices)]
-        chosen = random.choices(choices, weights=weights)[0]
-        if chosen:
-            text += f" {chosen}"
+    if last_word not in safe_endings and not text.endswith("..."):
+        text += f" {random.choice(endings_by_tone.get(tone, ['ครับ']))}"
 
     bad_phrases = ["สุดยอด", "อัจฉริยะ", "เหลือเชื่อ", "พลังแห่ง", "สุดแสน", "ไร้ขีดจำกัด", "พรสวรรค์"]
     for phrase in bad_phrases:
@@ -208,9 +184,8 @@ def index():
             {"role": "user", "content": question}
         ]
         try:
-            model_used = choose_model_by_question(question)
             response = openai.chat.completions.create(
-                model=model_used,
+                model="gpt-3.5-turbo",
                 messages=messages
             )
             reply = response.choices[0].message.content.strip()
