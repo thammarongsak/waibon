@@ -165,7 +165,7 @@ def require_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.authorization
-        if not auth or not (auth.username == "Song" and auth.password == "2222"):
+        if not auth or not (auth.username == "song" and auth.password == "2222"):
             return Response("⛔ Unauthorized Access", 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
         return f(*args, **kwargs)
     return decorated
