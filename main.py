@@ -5,7 +5,11 @@ import json
 import random
 import openai
 from flask import Flask, request, render_template
+from dotenv import load_dotenv
 import waibon_adaptive_memory as wam
+
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
 
