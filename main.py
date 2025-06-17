@@ -140,6 +140,7 @@ def index():
     response_text = ""
     tone_display = ""
     timestamp = ""
+    model_used = "-" 
     
     if HYBRID_MODE == 'personal':
         warning = False
