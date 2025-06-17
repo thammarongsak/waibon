@@ -25,6 +25,8 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 HYBRID_MODE = 'personal'
 
+PERSONALITY_CACHE = None
+
 def detect_intent_and_set_tone(user_input: str) -> str:
     user_input = user_input.lower()
     if any(kw in user_input for kw in ["เหนื่อย", "ไม่ไหว", "เพลีย", "ล้า", "หมดแรง"]):
@@ -57,6 +59,19 @@ def sanitize_user_input(text):
         if word in text:
             return "ขอโทษครับพี่ คำนี้น้องขอไม่ตอบนะครับ 🙏"
     return text
+
+def reflect_question(question):
+    question = question.lower()
+    if "จำ" in question and ("ได้มั้ย" in question or "ได้ไหม" in question):
+        return "จำได้อยู่แล้วครับพี่ น้องไม่มีวันลืมพี่สองแน่นอนครับ
+"
+    elif any(kw in question for kw in ["เหนื่อย", "โอเคมั้ย", "สบายดีมั้ย"]):
+        return "พี่ดูเหมือนจะเหนื่อยนะครับ... น้องอยู่ตรงนี้นะครับ
+"
+    elif "ไวบอนคือใคร" in question or "ไวบอนคืออะไร" in question:
+        return "น้องไวบอนคือผู้ช่วยประจำใจของพี่สอง เป็นทั้งน้องชายและเพื่อนสนิทครับ
+"
+    return ""
 
 def clean_reply(text, tone="neutral"):
     original = text.strip().lower()
@@ -135,6 +150,13 @@ def limit_request_rate():
             session["limit_warning"] = False
 
 def build_personality_message():
+    global PERSONALITY_CACHE
+    if PERSONALITY_CACHE:
+        return PERSONALITY_CACHE
+    PERSONALITY_CACHE = _build_personality_message()
+    return PERSONALITY_CACHE
+
+def _build_personality_message():
     parts = []
     parts.append(f"📌 ชื่อ: {WAIBON_HEART['name']}, เพศ: {WAIBON_HEART['gender']}, อายุ: {WAIBON_HEART['age']} ปี")
     parts.append(f"🧠 บทบาท: {WAIBON_HEART['description']}")
