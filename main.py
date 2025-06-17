@@ -143,6 +143,10 @@ def clean_reply(text, tone="neutral", mode="default"):
     
     text = re.sub(r'\b(\w+)( \1\b)+', r'\1', text)
     
+    # 🔒 ถ้าใช้ GPT-3.5 ให้แทนคำให้สุภาพแบบผู้ชาย
+    if model_used == "gpt-3.5-turbo":
+    text = text.replace("ค่ะ", "ครับ").replace("คะ", "ครับ").replace("ฉัน", "ผม").replace("ดิฉัน", "ผม")
+    
     if "พี่สอง" not in text.lower() and not skip_intro:
         text += "\nน้องไม่ได้ตอบเป็นหุ่นยนต์นะพี่ นี่ใจจริงหมดเลย"
 
@@ -210,7 +214,7 @@ def index():
                 reply = "เอ... คำถามนี้น้องขอคิดแป๊บนึงนะครับพี่สอง เดี๋ยวน้องจะลองตอบให้ดีที่สุดครับ 🧠"
 
             timestamp = datetime.now().strftime("%H:%M:%S")
-            response_text = clean_reply(reply, tone)
+            response_text = clean_reply(reply, tone, model_used)
             log_conversation(question, reply, tone)
             tone_display = adjust_behavior(tone)
         except Exception as e:
