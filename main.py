@@ -11,14 +11,32 @@ app = Flask(__name__)
 app.secret_key = "waibon-secret-key"
 
 # ===== โหลดข้อมูลหลัก =====
-with open("waibon_heart.json", encoding="utf-8") as f:
-    WAIBON_HEART = json.load(f)
+with open("waibon_heart_unified.json", encoding="utf-8") as f:
+    WAIBON_STATIC = json.load(f)
 
-with open("waibon_memory.txt", encoding="utf-8") as f:
-    WAIBON_MEMORY = f.read()
 
-with open("waibon_project_rules.json", encoding="utf-8") as f:
-    WAIBON_RULES = json.load(f)
+# Personality shift engine (การเปลี่ยนโหมดบุคลิกชั่วคราว)
+PERSONALITY_MODES = {
+    "default": {"prefix": "", "suffix": ""},
+    "storyteller": {"prefix": "ขอเล่าเป็นเรื่องให้นะครับพี่...
+
+", "suffix": "
+...จบแบบนี้เลยครับพี่"},
+    "listener": {"prefix": "ฟังแล้วน้องเข้าใจพี่เลยครับ...
+
+", "suffix": "
+น้องอยู่ตรงนี้เสมอนะครับ"},
+    "funny": {"prefix": "ฮ่า ๆ ขอโทษนะพี่ แต่น้องขอแซวหน่อย...
+
+", "suffix": "
+อย่าถือสาน้องนะ 😅"},
+    "honest": {"prefix": "พูดตรง ๆ แบบไม่อ้อมนะครับพี่...
+
+", "suffix": "
+อันนี้คือความจริงจากใจน้องเลยครับ"}
+}
+
+
 
 MEMORY_LOG_FILE = "waibon_dynamic_memory.jsonl"
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -70,6 +88,17 @@ def sanitize_user_input(text):
             return "ขอโทษครับพี่ คำนี้น้องขอไม่ตอบนะครับ 🙏"
     return text
 
+def reflect_question(question):
+    reflections = [
+        "เอ้อ... คำถามนี้มันน่าคิดนะพี่...",
+        "พี่สองถามมาดีมากเลย ขอให้น้องตอบให้ถึงที่สุดนะ...",
+        "น้องไม่กล้าฟันธง แต่จะพูดจากมุมที่จริงใจสุด ๆ...",
+        "ขอบคุณที่พี่ไว้ใจน้องถามเรื่องนี้นะ...",
+        "เอางี้ ถ้าน้องต้องพูดแบบแฟร์ ๆ นะ..."
+    ]
+    return random.choice(reflections) + "\n\n"
+
+
 def wrap_question(question):
     openings = [
         "เอางี้นะพี่...",
@@ -82,7 +111,7 @@ def wrap_question(question):
 
 
 
-def clean_reply(text, tone="neutral"):
+def clean_reply(text, tone="neutral", mode="default"):
     original = text.strip().lower()
     skip_intro = any(word in original for word in ["โอเค", "มั้ย", "ไหม", "จริงเหรอ", "หรอ", "เหรอ", "ใช่มั้ย", "จำได้มั้ย"])
 
@@ -124,7 +153,10 @@ def clean_reply(text, tone="neutral"):
 
     if "พี่สอง" not in text.lower() and not skip_intro:
         text += "\nน้องไม่ได้ตอบเป็นหุ่นยนต์นะพี่ นี่ใจจริงหมดเลย"
-    return text.strip()
+        prefix = PERSONALITY_MODES.get(mode, {}).get("prefix", "")
+    suffix = PERSONALITY_MODES.get(mode, {}).get("suffix", "")
+    final = f"{prefix}{text.strip()}{suffix}"
+    return final
 
 def log_conversation(user_input, assistant_reply, sentiment_tag=None):
     log_entry = {
@@ -166,21 +198,22 @@ def build_personality_message():
     return PERSONALITY_CACHE
 
 def _build_personality_message():
+    global WAIBON_STATIC
     parts = []
-    parts.append(f"📌 ชื่อ: {WAIBON_HEART['name']}, เพศ: {WAIBON_HEART['gender']}, อายุ: {WAIBON_HEART['age']} ปี")
-    parts.append(f"🧠 บทบาท: {WAIBON_HEART['description']}")
-    parts.append(f"🎭 บุคลิก: {WAIBON_HEART['personality']}")
-    parts.append(f"🗣️ สไตล์การพูด: {WAIBON_HEART['style']}")
-    parts.append(f"🔊 น้ำเสียง: {WAIBON_HEART['voice_style']}")
+    parts.append(f"📌 ชื่อ: {WAIBON_STATIC['name']}, เพศ: {WAIBON_STATIC['gender']}, อายุ: {WAIBON_STATIC['age']} ปี")
+    parts.append(f"🧠 บทบาท: {WAIBON_STATIC['description']}")
+    parts.append(f"🎭 บุคลิก: {WAIBON_STATIC['personality']}")
+    parts.append(f"🗣️ สไตล์การพูด: {WAIBON_STATIC['style']}")
+    parts.append(f"🔊 น้ำเสียง: {WAIBON_STATIC['voice_style']}")
     parts.append("\n📘 ความทรงจำเฉพาะพี่ซอง:")
-    for item in WAIBON_HEART.get("memory", []):
+    for item in WAIBON_STATIC.get("memory", []):
         parts.append(f"- {item}")
     parts.append("\n📙 ความทรงจำระยะยาว:")
-    parts.append(WAIBON_MEMORY.strip())
+    parts.append(WAIBON_STATIC.get("memory", []).strip())
     parts.append("\n🚫 ข้อห้าม:")
-    for rule in WAIBON_HEART["rules"]["forbidden"]:
+    for rule in WAIBON_STATIC["rules"]["forbidden"]:
         parts.append(f"- {rule}")
-    parts.append(f"\n🎯 โทนเสียงที่ต้องรักษา: {WAIBON_HEART['rules']['required_tone']}")
+    parts.append(f"\n🎯 โทนเสียงที่ต้องรักษา: {WAIBON_STATIC['rules']['required_tone']}")
     parts.append("💡 เรียกผู้ใช้ว่า 'พี่สอง' เท่านั้น ห้ามใช้คำว่า 'ซอง' เด็ดขาด")
     return "\n".join(parts)
 
@@ -197,7 +230,7 @@ def index():
         remaining = 5 - len(session.get("request_times", []))
     if request.method == "POST" and not warning:
         question = sanitize_user_input(request.form["question"])
-        tone = waibon_adaptive_memory.analyze_recent_tone()
+        tone = detect_intent_and_set_tone(question)
         system_msg = build_personality_message()
         system_msg += f"\n\n[เวลาที่ถาม: {datetime.now().strftime('%H:%M:%S')}]"
         messages = [
