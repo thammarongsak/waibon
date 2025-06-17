@@ -70,11 +70,23 @@ def sanitize_user_input(text):
             return "ขอโทษครับพี่ คำนี้น้องขอไม่ตอบนะครับ 🙏"
     return text
 
+def wrap_question(question):
+    openings = [
+        "เอางี้นะพี่...",
+        "สมมุติว่าเราคุยเล่น ๆ นะ...",
+        "พี่สอง ลองคิดแบบนี้ดู...",
+        "ถ้าน้องตอบแบบสบาย ๆ เลยนะ...",
+        "คุยกันตรง ๆ แบบพี่น้องนะพี่..."
+    ]
+    return random.choice(openings) + "\n\n" + question.strip()
+
+
+
 def clean_reply(text, tone="neutral"):
     original = text.strip().lower()
     skip_intro = any(word in original for word in ["โอเค", "มั้ย", "ไหม", "จริงเหรอ", "หรอ", "เหรอ", "ใช่มั้ย", "จำได้มั้ย"])
 
-    text = re.sub(r'[^฀-๿A-Za-z0-9\s\.,!?"\'():\-]+', '', text).strip()
+     text = re.sub(r'[^฀-๿A-Za-z0-9\s\.,!?"\'():\-]+', '', text).strip()
     if "," in text:
         text = text.replace(",", "...", 1)
     if tone == "joy":
@@ -84,7 +96,7 @@ def clean_reply(text, tone="neutral"):
     elif tone == "tired":
         text = "เฮ้อ... " + text
 
-    intro_variants = ["พี่สองครับ...", "ว่าแต่...", "เอาจริงนะครับ...", "พูดแบบไม่โลกสวยเลยนะ...", "น้องขอเล่าแบบตรง ๆ นะครับ..."]
+    intro_variants = ["เอางี้นะพี่สอง...", "ถ้าน้องพูดตรง ๆ เลยนะ...", "ฟังน้องก่อนนะพี่...", "คุยกันแบบบ้าน ๆ เลยนะ...", "พี่ลองคิดดูแบบนี้..."]
     if not any(text.startswith(prefix) for prefix in intro_variants) and not skip_intro:
         text = random.choice(intro_variants) + " " + text
 
@@ -110,8 +122,8 @@ def clean_reply(text, tone="neutral"):
 
     text = re.sub(r'\b(\w+)( \1\b)+', r'\1', text)
 
-    if "พี่สอง" not in text and not skip_intro:
-        text += "\nน้องพูดทั้งหมดนี้จากใจเลยนะครับพี่สอง"
+    if "พี่สอง" not in text.lower() and not skip_intro:
+        text += "\nน้องไม่ได้ตอบเป็นหุ่นยนต์นะพี่ นี่ใจจริงหมดเลย"
     return text.strip()
 
 def log_conversation(user_input, assistant_reply, sentiment_tag=None):
@@ -190,7 +202,7 @@ def index():
         system_msg += f"\n\n[เวลาที่ถาม: {datetime.now().strftime('%H:%M:%S')}]"
         messages = [
             {"role": "system", "content": system_msg},
-            {"role": "user", "content": question}
+            {"role": "user", "content": wrap_question(question)}
         ]
         try:
             model_used = choose_model_by_question(question)
