@@ -31,6 +31,7 @@
 
     <form method="POST">
         <input 
+            id="question-input"
             type="text" 
             name="question" 
             placeholder="คุยกับไวบอนได้เลยจร้าาา" 
@@ -69,5 +70,16 @@
         <a href="/download_log/txt" class="btn">📄 ดาวน์โหลด .txt</a>
         <a href="/download_log/jsonl" class="btn">🧾 ดาวน์โหลด .jsonl</a>
     </div>
+    <script>
+      window.addEventListener('DOMContentLoaded', function() {
+        const input = document.getElementById('question-input');
+        if (input) {
+        const val = input.value;
+        input.focus();
+        input.setSelectionRange(val.length, val.length);  // เคอร์เซอร์ไปหลังสุด
+    }
+  });
+</script>
+
 </body>
 </html>
