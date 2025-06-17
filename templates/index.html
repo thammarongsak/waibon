@@ -1,56 +1,51 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>ถามอะไรก็ได้กับไวบอน 🤖</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+  <meta charset="UTF-8">
+  <title>Waibon GPT</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 40px;
+    }
+    .box {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f3f3f3;
+      border-radius: 8px;
+    }
+    .status {
+      margin-top: 10px;
+      color: #444;
+    }
+    .warning {
+      color: red;
+    }
+  </style>
 </head>
 <body>
-    <h1>ถามอะไรก็ได้กับไวบอน 🐣</h1>
+  <h1>ถามอะไรก็ได้กับไวบอน 🐣</h1>
 
-    {% if tone %}
-    <div class="status-box">
-        🕹️ ตอนนี้ไวบอนอยู่ในโหมด: <strong>{{ tone }}</strong>
-    </div>
-    {% endif %}
+  <form method="POST">
+    <input name="question" placeholder="พิมพ์คำถามที่นี่" style="width:300px;">
+    <button type="submit">ถามเลย</button>
+  </form>
 
-    {% if warning %}
-    <div class="status-box warning">
-        ⚠️ พี่ถามเยอะแล้วนะครับ เหลืออีก {{ remaining }} คำถามใน 10 นาทีนี้
-    </div>
-    {% elif remaining|string == '∞' %}
-    <div class="status-box">
-        🧪 โหมดส่วนตัว: ไม่จำกัดคำถาม (∞ คำถามใน 10 นาทีนี้ครับ)
-    </div>
-    {% elif remaining|int <= 2 %}
-    <div class="status-box warning">
-        ⏳ เหลืออีก {{ remaining }} คำถามใน 10 นาทีนี้ครับ
-    </div>
-    {% endif %}
+  {% if timestamp %}
+    <p class="status">🕒 ตอบเมื่อ: {{ timestamp }}</p>
+  {% endif %}
+  {% if tone %}
+    <p class="status">📶 โหมด: {{ tone }}</p>
+  {% endif %}
+  {% if warning %}
+    <p class="status warning">⚠️ พี่ถามเยอะแล้วนะครับ เหลืออีก {{ remaining }} คำถามในรอบนี้</p>
+  {% endif %}
 
-    <form method="POST">
-        <input type="text" name="question" placeholder="คุยกับไวบอนได้เลยจร้าาา" required>
-        <button type="submit">ถามเลย</button>
-    </form>
-
-    {% if response %}
-    <div class="response-box">
-        <strong>ไวบอนตอบ:</strong>
-        <p>{{ response.replace('\n', '<br>')|safe }}</p>
+  {% if response %}
+    <div class="box">
+      <h3>ไวบอนตอบ:</h3>
+      <p>{{ response }}</p>
     </div>
-    {% endif %}
-
-    {% if response %}
-    <div style="font-size: 0.7rem; color: gray; margin-top: 1rem;">
-        🕒 ตอบเมื่อ: {{ timestamp }}<br>
-        📶 โหมด: {{ tone }}
-    </div>
-    {% endif %}
-
-    <div style="margin-top: 2rem;">
-        <a href="/download_log/txt" class="btn">📄 ดาวน์โหลด .txt</a>
-        <a href="/download_log/jsonl" class="btn">🧾 ดาวน์โหลด .jsonl</a>
-    </div>
+  {% endif %}
 </body>
 </html>
