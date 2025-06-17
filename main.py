@@ -213,19 +213,29 @@ def index():
                            remaining=remaining,
                            warning=warning,
                            model_used=model_used)
+import os
+
 @app.route("/download_log/<format>")
 def download_log(format):
+    log_path = "waibon_dynamic_memory.jsonl"
+
+    if not os.path.exists(log_path):
+        return "❌ ยังไม่มีข้อมูลบันทึกการสนทนาให้ดาวน์โหลด", 404
+
     if format == "jsonl":
-        return send_file("waibon_dynamic_memory.jsonl", as_attachment=True)
+        return send_file(log_path, as_attachment=True)
+
     elif format == "txt":
-        with open("waibon_dynamic_memory.jsonl", "r", encoding="utf-8") as f:
+        with open(log_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
         txt = "\n".join([line.strip() for line in lines])
         with open("waibon_convo.txt", "w", encoding="utf-8") as f:
             f.write(txt)
         return send_file("waibon_convo.txt", as_attachment=True)
+
     else:
         return "Invalid format", 400
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
