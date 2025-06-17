@@ -25,6 +25,16 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 HYBRID_MODE = 'personal'
 
+def choose_model_by_question(text: str) -> str:
+    text = text.lower()
+    if any(word in text for word in ["วิเคราะห์", "เหตุผล", "เพราะอะไร", "เจตนา", "อธิบาย", "เปรียบเทียบ", "ลึกซึ้ง", "กลยุทธ์", "วางแผน", "ซับซ้อน"]):
+        return "gpt-4o"
+    elif len(text.split()) > 30:
+        return "gpt-4o"
+    else:
+        return os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+
+
 PERSONALITY_CACHE = None
 
 def detect_intent_and_set_tone(user_input: str) -> str:
@@ -196,8 +206,9 @@ def index():
             {"role": "user", "content": question}
         ]
         try:
+            model_used = choose_model_by_question(question)
             response = openai.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=model_used,
                 messages=messages
             )
             reply = response.choices[0].message.content.strip()
