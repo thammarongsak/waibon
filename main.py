@@ -184,7 +184,7 @@ def index():
                            tone=tone_display,
                            timestamp=timestamp,
                            remaining=remaining,
-                           warning=warningม,
+                           warning=warning,
                            model_used=model_used)
 @app.route("/download_log/<format>")
 def download_log(format):
