@@ -326,3 +326,6 @@ def default_response(original, intent, tone):
         return base + " พี่แค่ถาม น้องก็พร้อมแล้วครับ"
     else:
         return base
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
