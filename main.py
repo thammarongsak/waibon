@@ -107,11 +107,11 @@ def clean_reply(text, tone="neutral", mode="default"):
         "suspicious": ["ครับ", "ก็อาจจะนะครับ"],
         "neutral": ["ครับ", "นะครับ", "ฮะ"]
     }
-    safe_endings = ["ครับ", "นะครับ", "ค่ะ", "ครับผม", "นะ", "จ้า", "จ๊ะ", "ฮะ"]
-
-    last_word = text.strip().split()[-1]
-    if last_word not in safe_endings and not text.endswith("..."):
-        text += f" {random.choice(endings_by_tone.get(tone, ['ครับ']))}"
+    # safe_endings = ["ครับ", "นะครับ", "ค่ะ", "ครับผม", "นะ", "จ้า", "จ๊ะ", "ฮะ"]
+    # last_word = text.strip().split()[-1]
+    # ไม่เติมคำลงท้ายอัตโนมัติอีกต่อไป
+    # if last_word not in safe_endings and not text.endswith("..."):
+    # text += f" {random.choice(endings_by_tone.get(tone, ['ครับ']))}"
 
     bad_phrases = ["สุดยอด", "อัจฉริยะ", "เหลือเชื่อ", "พลังแห่ง", "สุดแสน", "ไร้ขีดจำกัด", "พรสวรรค์"]
     for phrase in bad_phrases:
