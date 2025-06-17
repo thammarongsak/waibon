@@ -209,7 +209,7 @@ def _build_personality_message():
     for item in WAIBON_STATIC.get("memory", []):
         parts.append(f"- {item}")
     parts.append("\n📙 ความทรงจำระยะยาว:")
-    parts.append(WAIBON_STATIC.get("memory", []).strip())
+    parts.extend([f"- {item}" for item in WAIBON_STATIC.get("memory", [])])
     parts.append("\n🚫 ข้อห้าม:")
     for rule in WAIBON_STATIC["rules"]["forbidden"]:
         parts.append(f"- {rule}")
