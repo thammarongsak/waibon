@@ -25,8 +25,8 @@
         z-index: 1000;
       }
       main {
-        padding-top: 180px;  /* เผื่อความสูงของ header */
-        padding-bottom: 160px; /* เผื่อความสูงของ footer */
+        padding-top: 180px;
+        padding-bottom: 160px;
       }
       .chat-block {
         border: 1px solid #ccc;
@@ -87,17 +87,20 @@
           <div class="chat-entry">
             🧍‍♂️ พี่สอง: {{ entry.question }}
           </div>
+          {% if entry.file %}
+          <div class="chat-entry">
+            📎 แนบไฟล์: {{ entry.file }}
+          </div>
+          {% else %}
+          <div class="chat-entry">
+            📎 แนบไฟล์: ไม่มี
+          </div>
+          {% endif %}
           <div class="chat-entry">
             🤖 ไวบอน: {{ entry.answer }}
           </div>
         {% endfor %}
       </div>
-    {% endif %}
-
-    {% if response %}
-    <div class="response-box">
-        <p>{{ response.replace('\n', '<br>')|safe }}</p>
-    </div>
     {% endif %}
 
     {% if response %}
@@ -134,7 +137,7 @@
       if (input) {
         const val = input.value;
         input.focus();
-        input.setSelectionRange(val.length, val.length);  // เคอร์เซอร์ไปหลังสุด
+        input.setSelectionRange(val.length, val.length);
       }
     });
   </script>
