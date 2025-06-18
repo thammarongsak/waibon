@@ -5,8 +5,33 @@
     <title>ถามอะไรก็ได้กับไวบอน 🤖</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <style>
+      header {
+        position: fixed;
+        top: 0;
+        width: 100%;
+        background: white;
+        padding: 1rem;
+        border-bottom: 1px solid #ddd;
+        z-index: 1000;
+      }
+      footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        background: white;
+        padding: 1rem;
+        border-top: 1px solid #ddd;
+        z-index: 1000;
+      }
+      main {
+        padding-top: 180px;  /* เผื่อความสูงของ header */
+        padding-bottom: 160px; /* เผื่อความสูงของ footer */
+      }
+    </style>
 </head>
 <body>
+  <header>
     <h1>ถามอะไรก็ได้กับไวบอน 🤖🐣</h1>
 
     {% if tone %}
@@ -39,31 +64,30 @@
             autofocus 
             required 
             style="width: 100%; padding: 1rem; font-size: 1.2rem;"
-    >
-    <input type="file" name="file">
-    <button type="submit">ถามเลย</button>
+        >
+        <input type="file" name="file">
+        <button type="submit">ถามเลย</button>
+    </form>
+  </header>
 
-{% if session.chat_log %}
-  {% for entry in session.chat_log %}
-    <div class="chat-block" style="border:1px solid #ccc; padding:15px; margin-bottom:10px; border-radius:10px;">
-      <div class="user-question">
-        <strong>🧍‍♂️ พี่สอง:</strong><br>
-        <pre style="white-space:pre-wrap;">{{ entry.question }}</pre>
-      </div>
-      <div class="waibon-reply" style="margin-top:10px;">
-        <strong>🤖 ไวบอน:</strong><br>
-        <pre style="white-space:pre-wrap;">{{ entry.answer }}</pre>
-      </div>
-    </div>
-  {% endfor %}
-{% endif %}
-
-        
-</form>
+  <main>
+    {% if session.chat_log %}
+      {% for entry in session.chat_log %}
+        <div class="chat-block" style="border:1px solid #ccc; padding:15px; margin-bottom:10px; border-radius:10px;">
+          <div class="user-question">
+            <strong>🧍‍♂️ พี่สอง:</strong><br>
+            <pre style="white-space:pre-wrap;">{{ entry.question }}</pre>
+          </div>
+          <div class="waibon-reply" style="margin-top:10px;">
+            <strong>🤖 ไวบอน:</strong><br>
+            <pre style="white-space:pre-wrap;">{{ entry.answer }}</pre>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
 
     {% if response %}
     <div class="response-box">
-        <!-- <strong>ไวบอนตอบ:</strong> -->
         <p>{{ response.replace('\n', '<br>')|safe }}</p>
     </div>
     {% endif %}
@@ -75,6 +99,7 @@
         🤖 ใช้โมเดล: {{ model_used }}<br>
     </div>
     {% endif %}
+
     <div style="font-size: 0.7rem; color: gray; margin-top: 2rem;">
         💡 <strong>วิธีเลือกโมเดล:</strong><br>
         &nbsp;&nbsp;&nbsp;• พิมพ์ <code>@3.5</code> เพื่อตอบด้วย GPT-3.5 (ประหยัด)<br>
@@ -83,25 +108,27 @@
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- GPT-4o: ถ้าคำถามมีคำว่า "วิเคราะห์", "เหตุผล", "เพราะอะไร", "เจตนา", "อธิบาย", "เปรียบเทียบ", "ลึกซึ้ง", "กลยุทธ์", "วางแผน", "ซับซ้อน"<br>
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- GPT-3.5: ถ้าเป็นคำถามทั่วไปหรือสั้น ๆ
     </div>
-        
+  </main>
+
+  <footer>
     <div style="margin-top: 2rem;">
         <a href="/download_log/txt" class="btn">📄 ดาวน์โหลด .txt</a>
         <a href="/download_log/jsonl" class="btn">🧾 ดาวน์โหลด .jsonl</a>
     </div>
-        <div style="margin-top: 1rem;">
+    <div style="margin-top: 1rem;">
         <a href="/upload-panel" class="btn" style="background-color: green; padding: 0.6rem 1.2rem; border-radius: 6px; color: white; text-decoration: none;">🗂️ ไปจัดการไฟล์ที่อัปโหลด</a>
     </div>
+  </footer>
 
-    <script>
-      window.addEventListener('DOMContentLoaded', function() {
-        const input = document.getElementById('question-input');
-        if (input) {
+  <script>
+    window.addEventListener('DOMContentLoaded', function() {
+      const input = document.getElementById('question-input');
+      if (input) {
         const val = input.value;
         input.focus();
         input.setSelectionRange(val.length, val.length);  // เคอร์เซอร์ไปหลังสุด
-    }
-  });
-</script>
-
+      }
+    });
+  </script>
 </body>
 </html>
