@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>🗂️ ศูนย์ควบคุมไฟล์ | ไวบอน</title>
+    <style>
+        body { font-family: sans-serif; padding: 2rem; background-color: #f9f9f9; }
+        h1 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #e0e0e0; }
+        tr:hover { background-color: #f1f1f1; }
+        .group-header { background-color: #cce5ff; font-weight: bold; padding: 0.5rem; margin-top: 2rem; }
+        .btn { padding: 0.6rem 1.2rem; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 1rem; }
+        .btn:hover { background-color: #0056b3; }
+        input[type="checkbox"] { transform: scale(1.3); margin-right: 0.6rem; }
+        .file-icon { font-size: 1.2rem; margin-right: 0.5rem; }
+    </style>
+</head>
+<body>
+    <h1>🗂️ จัดการไฟล์ที่อัปโหลดไว้</h1>
+
+    <form method="POST" action="/analyze_selected">
+        {% for group, files in grouped_files.items() %}
+            <div class="group-header">{{ group }}</div>
+            <table>
+                <tr>
+                    <th>เลือก</th>
+                    <th>ชื่อไฟล์</th>
+                    <th>ประเภท</th>
+                    <th>ขนาด</th>
+                    <th>วันที่อัปโหลด</th>
+                </tr>
+                {% for file in files %}
+                <tr>
+                    <td><input type="checkbox" name="selected_files" value="{{ file.name }}"></td>
+                    <td><span class="file-icon">📄</span>{{ file.name }}</td>
+                    <td>{{ file.type }}</td>
+                    <td>{{ file.size }}</td>
+                    <td>{{ file.date }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% endfor %}
+
+        <button type="submit" class="btn">🚀 วิเคราะห์ไฟล์ที่เลือก</button>
+    </form>
+
+</body>
+</html>
