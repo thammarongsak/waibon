@@ -207,6 +207,22 @@ def index():
 
     if request.method == "POST" and not warning:
         raw_input = request.form.get("question", "").strip()
+
+            file = request.files.get("file")
+
+    if file and file.filename:
+        filepath = os.path.join("uploads", file.filename)
+        file.save(filepath)
+        response_text = f"✅ พี่ส่งไฟล์: {file.filename} มาแล้วครับ เดี๋ยวน้องจะจัดการให้นะครับ"
+        tone_display = "📂 File Uploaded"
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        return render_template("index.html",
+                               response=response_text,
+                               tone=tone_display,
+                               timestamp=timestamp,
+                               remaining=remaining,
+                               warning=warning,
+                               model_used=model_used)      
         model_pref, cleaned_input = parse_model_selector(raw_input)
         question = sanitize_user_input(cleaned_input)
         tone = detect_intent_and_set_tone(question)
