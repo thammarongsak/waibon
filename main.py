@@ -240,6 +240,15 @@ def index():
                 messages=messages
             )
             reply = response.choices[0].message.content.strip() if response.choices else "..."
+            if "chat_log" not in session:
+                session["chat_log"] = []
+
+            session["chat_log"].append({
+                "question": question,
+                "answer": reply,
+                "file": file.filename if file and file.filename else None
+})
+
             if not reply or len(reply) < 5:
                 reply = "เอ... คำถามนี้น้องขอคิดแป๊บนึงนะครับพี่สอง เดี๋ยวน้องจะลองตอบให้ดีที่สุดครับ 🧠"
 
