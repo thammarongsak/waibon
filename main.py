@@ -234,6 +234,8 @@ def index():
             {"role": "system", "content": system_msg},
             {"role": "user", "content": question.strip()}  # ไม่ใช้ wrap_question แล้ว
         ]
+from datetime import datetime
+
 try:
     model_used = model_pref or choose_model_by_question(question)
     response = openai.chat.completions.create(
@@ -242,17 +244,28 @@ try:
     )
     reply = response.choices[0].message.content.strip() if response.choices else "..."
 
-from datetime import datetime
-now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
+    now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
 
-session["chat_log"].append({
-    "question": question,
-    "answer": reply,
-    "file": file.filename if file and file.filename else None,
-    "ask_time": now_str,
-    "reply_time": now_str,
-    "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
-})
+    if "chat_log" not in session:
+        session["chat_log"] = []
+
+    session["chat_log"].append({
+        "question": question,
+        "answer": reply,
+        "file": file.filename if file and file.filename else None,
+        "ask_time": now_str,
+        "reply_time": now_str,
+        "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
+    })
+
+    return render_template("index.html",
+        response=reply,
+        tone=tone_display,
+        timestamp=now_str,
+        remaining=remaining,
+        warning=warning,
+        model_used=model_used
+    )
 
 except Exception as e:
     print(f"เกิดข้อผิดพลาด: {e}")
