@@ -369,7 +369,7 @@ answer_text = response.choices[0].message.content.strip() if response.choices el
 
 # สร้าง log ถ้ายังไม่มี
 if "chat_log" not in session:
-    session["chat_log"] = []
+session["chat_log"] = []
 
 # เพิ่มคำถาม-คำตอบเข้า log
 session["chat_log"].append({
@@ -377,14 +377,14 @@ session["chat_log"].append({
     "answer": answer_text
 })
 
-reply_text = waibon_analyze(question, saved_paths)
-return render_template("index.html",
-    response=reply_text,
-    tone="🎯 Files + Question",
-    model_used="gpt-4o",
-    timestamp=datetime.now().strftime("%H:%M:%S"),
-    remaining='∞',
-    warning=False
+    reply_text = waibon_analyze(question, saved_paths)
+    return render_template("index.html",
+        response=reply_text,
+        tone="🎯 Files + Question",
+        model_used="gpt-4o",
+        timestamp=datetime.now().strftime("%H:%M:%S"),
+        remaining='∞',
+        warning=False
 )
 
 def get_file_info(filename):
