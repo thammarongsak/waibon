@@ -377,15 +377,15 @@ session["chat_log"].append({
     "answer": answer_text
 })
 
-    reply_text = waibon_analyze(question, saved_paths)
-    return render_template("index.html",
-        response=reply_text,
-        tone="🎯 Files + Question",
-        model_used="gpt-4o",
-        timestamp=datetime.now().strftime("%H:%M:%S"),
-        remaining='∞',
-        warning=False
-    )
+reply_text = waibon_analyze(question, saved_paths)
+return render_template("index.html",
+    response=reply_text,
+    tone="🎯 Files + Question",
+    model_used="gpt-4o",
+    timestamp=datetime.now().strftime("%H:%M:%S"),
+    remaining='∞',
+    warning=False
+)
 
 def get_file_info(filename):
     path = os.path.join(UPLOAD_DIR, filename)
