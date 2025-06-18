@@ -6,6 +6,7 @@ from flask import Flask, render_template, request, session, send_file, redirect
 from datetime import datetime, timedelta
 import openai
 import waibon_adaptive_memory
+import humanize
 
 app = Flask(__name__)
 
@@ -309,6 +310,55 @@ def open_in_browser_guide():
     </body>
     </html>
     '''
+
+UPLOAD_DIR = "uploads"
+
+def get_file_info(filename):
+    path = os.path.join(UPLOAD_DIR, filename)
+    size = humanize.naturalsize(os.path.getsize(path))
+    date = datetime.fromtimestamp(os.path.getmtime(path)).strftime("%Y-%m-%d")
+    ext = os.path.splitext(filename)[1].lower()
+    if ext in [".wav", ".mp3"]:
+        group = "🎵 ไฟล์เสียง"
+        ftype = "Audio"
+    elif ext in [".zip"]:
+        group = "📦 ZIP Archive"
+        ftype = "ZIP"
+    elif ext in [".tsv", ".jsonl", ".txt"]:
+        group = "📄 ตาราง / ข้อความ"
+        ftype = "Text"
+    else:
+        group = "🗃️ อื่น ๆ"
+        ftype = "Unknown"
+    return {
+        "name": filename,
+        "size": size,
+        "date": date,
+        "group": group,
+        "type": ftype
+    }
+
+@app.route("/upload-panel")
+@require_auth
+def upload_panel():
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    files = [get_file_info(f) for f in os.listdir(UPLOAD_DIR) if os.path.isfile(os.path.join(UPLOAD_DIR, f))]
+    grouped = {}
+    for f in files:
+        grouped.setdefault(f["group"], []).append(f)
+    return render_template("upload_panel.html", grouped_files=grouped)
+
+@app.route("/analyze_selected", methods=["POST"])
+@require_auth
+def analyze_selected():
+    selected = request.form.getlist("selected_files")
+    if not selected:
+        return "❗ ยังไม่ได้เลือกไฟล์ใด ๆ", 400
+    for fname in selected:
+        path = os.path.join(UPLOAD_DIR, fname)
+        print(f"🔍 วิเคราะห์ไฟล์: {fname}")
+        # call_analyze_function(path) ← วางฟังก์ชันวิเคราะห์จริงตรงนี้ได้ภายหลัง
+    return f\"✅ รับไฟล์ {len(selected)} รายการเพื่อวิเคราะห์แล้วครับพี่\"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
