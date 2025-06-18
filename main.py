@@ -193,85 +193,82 @@ def require_auth(f):
 @app.route("/", methods=["GET", "POST"])
 @require_auth
 def index():
+    warning = False
+    remaining = '∞'
+    tone = None
     response_text = ""
-    tone_display = ""
-    timestamp = ""
-    model_used = "-" 
-    
-    if HYBRID_MODE == 'personal':
-        warning = False
-        remaining = '∞'
-    else:
-        warning = session.get("limit_warning", False)
-        session_times = session.get("request_times", [])
-        session["request_times"] = session_times + [datetime.now().isoformat()]
-        remaining = 5 - len(session["request_times"])
+    model_used = ""
+    question = ""
+    file = None
 
-    if request.method == "POST" and not warning:
-        raw_input = request.form.get("question", "").strip()
+    if request.method == "POST":
+        question = request.form["question"]
+        tone = "neutral"
+        model_pref = "gpt-4o" if "@4o" in question else "gpt-3.5-turbo" if "@3.5" in question else None
+        question = question.replace("@4o", "").replace("@3.5", "").strip()
         file = request.files.get("file")
 
-        if file and file.filename:
-            filepath = os.path.join("uploads", file.filename)
-            file.save(filepath)
-            response_text = f"✅ พี่ส่งไฟล์: {file.filename} มาแล้วครับ เดี๋ยวน้องจะจัดการให้นะครับ"
-            tone_display = "📂 File Uploaded"
-            timestamp = datetime.now().strftime("%H:%M:%S")
+        messages = [{"role": "system", "content": "คุณคือผู้ช่วยชื่อไวบอน"}]
+        if "chat_log" in session:
+            for entry in session["chat_log"]:
+                messages.append({"role": "user", "content": entry["question"]})
+                messages.append({"role": "assistant", "content": entry["answer"]})
+        messages.append({"role": "user", "content": question})
+
+        try:
+            model_used = model_pref or choose_model_by_question(question)
+            response = openai.chat.completions.create(
+                model=model_used,
+                messages=messages
+            )
+            reply = response.choices[0].message.content.strip() if response.choices else "..."
+
+            now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
+
+            if "chat_log" not in session:
+                session["chat_log"] = []
+
+            session["chat_log"].append({
+                "question": question,
+                "answer": reply,
+                "file": file.filename if file and file.filename else None,
+                "ask_time": now_str,
+                "reply_time": now_str,
+                "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
+            })
+
             return render_template("index.html",
-                               response=response_text,
-                               tone=tone_display,
-                               timestamp=timestamp,
-                               remaining=remaining,
-                               warning=warning,
-                               model_used=model_used)      
-        model_pref, cleaned_input = parse_model_selector(raw_input)
-        question = sanitize_user_input(cleaned_input)
-        tone = detect_intent_and_set_tone(question)
-        system_msg = build_personality_message()
-        system_msg += f"\n\n[เวลาที่ถาม: {datetime.now().strftime('%H:%M:%S')}]"
+                response=reply,
+                tone=adjust_behavior(tone),
+                timestamp=now_str,
+                remaining=remaining,
+                warning=warning,
+                model_used=model_used
+            )
 
-        messages = [
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": question.strip()}  # ไม่ใช้ wrap_question แล้ว
-        ]
-    from datetime import datetime
+        except Exception as e:
+            print(f"เกิดข้อผิดพลาด: {e}")
+            response_text = "น้องเจอปัญหานิดหน่อยครับพี่ เดี๋ยวน้องจะลองใหม่ให้นะครับ"
+            tone_display = "⚠️ ERROR"
+            now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
 
-    try:
-        model_used = model_pref or choose_model_by_question(question)
-        response = openai.chat.completions.create(
-            model=model_used,
-            messages=messages
+            return render_template("index.html",
+                response=response_text,
+                tone=tone_display,
+                timestamp=now_str,
+                remaining=remaining,
+                warning=True,
+                model_used="ERROR"
+            )
+
+    return render_template("index.html",
+        response=response_text,
+        tone=tone,
+        timestamp=datetime.now().strftime("%H:%M:%S"),
+        remaining=remaining,
+        warning=warning,
+        model_used=model_used
     )
-        reply = response.choices[0].message.content.strip() if response.choices else "..."
-
-        now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
-
-        if "chat_log" not in session:
-            session["chat_log"] = []
-
-        session["chat_log"].append({
-            "question": question,
-            "answer": reply,
-            "file": file.filename if file and file.filename else None,
-            "ask_time": now_str,
-            "reply_time": now_str,
-            "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
-    })
-
-        return render_template("index.html",
-            response=reply,
-            tone=tone_display,
-            timestamp=now_str,
-            remaining=remaining,
-            warning=warning,
-            model_used=model_used
-    )
-
-    except Exception as e:
-        print(f"เกิดข้อผิดพลาด: {e}")
-        response_text = "น้องเจอปัญหานิดหน่อยครับพี่ เดี๋ยวน้องจะลองใหม่ให้นะครับ"
-        tone_display = "⚠️ ERROR"
-
 import os
 
 @app.route("/download_log/<format>")
