@@ -369,12 +369,12 @@ answer_text = response.choices[0].message.content.strip() if response.choices el
 
 # สร้าง log ถ้ายังไม่มี
 if "chat_log" not in session:
-session["chat_log"] = []
+    session["chat_log"] = []
 
 # เพิ่มคำถาม-คำตอบเข้า log
-session["chat_log"].append({
-    "question": combined_text,
-    "answer": answer_text
+    session["chat_log"].append({
+        "question": combined_text,
+        "answer": answer_text
 })
 
     reply_text = waibon_analyze(question, saved_paths)
