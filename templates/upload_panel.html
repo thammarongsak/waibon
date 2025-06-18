@@ -20,6 +20,17 @@
 <body>
     <h1>🗂️ จัดการไฟล์ที่อัปโหลดไว้</h1>
 
+{% if analyze_results %}
+  <div style="background:#e0ffe0; padding:12px; border:1px solid #ccc; margin-bottom:16px;">
+    <h3>📊 ผลวิเคราะห์:</h3>
+    <ul>
+      {% for msg in analyze_results %}
+        <li>{{ msg }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+    
     <form method="POST" action="/analyze_selected">
         {% for group, files in grouped_files.items() %}
             <div class="group-header">{{ group }}</div>
