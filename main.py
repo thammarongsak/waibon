@@ -268,13 +268,44 @@ def download_log(format):
 @app.route("/open-in-browser-guide")
 def open_in_browser_guide():
     return '''
-    <html>
-    <head><title>โปรดเปิดในเบราว์เซอร์</title></head>
-    <body style="font-family:sans-serif; padding:20px;">
+    <!DOCTYPE html>
+    <html lang="th">
+    <head>
+        <meta charset="UTF-8">
+        <title>โปรดเปิดในเบราว์เซอร์</title>
+        <script>
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            window.onload = () => {
+                if (isAndroid) {
+                    document.getElementById("android-btn").style.display = "block";
+                } else if (isIOS) {
+                    document.getElementById("ios-instruction").style.display = "block";
+                }
+            }
+        </script>
+    </head>
+    <body style="font-family:sans-serif; padding:20px; text-align:center;">
         <h2>🚫 ระบบไม่รองรับการเปิดจากใน LINE</h2>
-        <p>กรุณากดที่ปุ่ม <strong>⋮</strong> หรือ <strong>…</strong> มุมขวาบน</p>
-        <p>แล้วเลือก <strong>"เปิดใน Chrome"</strong> หรือ <strong>"Open in Browser"</strong></p>
-        <p>เพื่อเข้าสู่ระบบได้ตามปกติครับ 🙏</p>
+        <p>กรุณาเปิดในเบราว์เซอร์ปกติเพื่อใช้งานฟีเจอร์เต็ม</p>
+
+        <!-- ปุ่ม Android -->
+        <a id="android-btn"
+           href="intent://waibon.onrender.com#Intent;scheme=https;package=com.android.chrome;end"
+           style="display:none; padding:12px 24px; background-color:#4285f4; color:white; border-radius:8px; text-decoration:none; font-size:16px;">
+           🚀 เปิดเว็บไซต์หลักใน Google Chrome
+        </a>
+
+        <!-- คำแนะนำสำหรับ iPhone -->
+        <div id="ios-instruction" style="display:none; margin-top:20px; font-size:16px;">
+            <p>📱 สำหรับผู้ใช้ iPhone:</p>
+            <ul style="text-align:left; display:inline-block;">
+                <li>แตะปุ่ม <strong>แชร์</strong> ที่มุมล่างขวา</li>
+                <li>เลือก <strong>“เปิดใน Safari”</strong></li>
+                <li>หากไม่มี Safari ให้คัดลอกลิงก์แล้วเปิดเอง</li>
+            </ul>
+            <p style="color:gray;">หรือเปิดลิงก์นี้: <br><code>https://waibon.onrender.com</code></p>
+        </div>
     </body>
     </html>
     '''
