@@ -345,6 +345,20 @@ def ask_with_files():
             file.save(filepath)
             saved_paths.append(filepath)
 
+# เตรียมข้อความ Q+A
+combined_text = waibon_analyze(question, saved_paths)
+answer_text = "น้องจะวิเคราะห์ให้ทันทีครับพี่สอง ✨ (สมมุติคำตอบไว้ก่อน)"  # ตอนนี้ใช้ mock ไปก่อน
+
+# สร้าง log ถ้ายังไม่มี
+if "chat_log" not in session:
+    session["chat_log"] = []
+
+# เพิ่มคำถาม-คำตอบเข้า log
+session["chat_log"].append({
+    "question": combined_text,
+    "answer": answer_text
+})
+
     reply_text = waibon_analyze(question, saved_paths)
     return render_template("index.html",
         response=reply_text,
