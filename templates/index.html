@@ -28,6 +28,16 @@
         padding-top: 180px;  /* เผื่อความสูงของ header */
         padding-bottom: 160px; /* เผื่อความสูงของ footer */
       }
+      .chat-block {
+        border: 1px solid #ccc;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        white-space: pre-wrap;
+      }
+      .chat-entry {
+        margin-bottom: 10px;
+      }
     </style>
 </head>
 <body>
@@ -72,18 +82,16 @@
 
   <main>
     {% if session.chat_log %}
-      {% for entry in session.chat_log %}
-        <div class="chat-block" style="border:1px solid #ccc; padding:15px; margin-bottom:10px; border-radius:10px;">
-          <div class="user-question">
-            <strong>🧍‍♂️ พี่สอง:</strong><br>
-            <pre style="white-space:pre-wrap;">{{ entry.question }}</pre>
+      <div class="chat-block">
+        {% for entry in session.chat_log %}
+          <div class="chat-entry">
+            🧍‍♂️ พี่สอง: {{ entry.question }}
           </div>
-          <div class="waibon-reply" style="margin-top:10px;">
-            <strong>🤖 ไวบอน:</strong><br>
-            <pre style="white-space:pre-wrap;">{{ entry.answer }}</pre>
+          <div class="chat-entry">
+            🤖 ไวบอน: {{ entry.answer }}
           </div>
-        </div>
-      {% endfor %}
+        {% endfor %}
+      </div>
     {% endif %}
 
     {% if response %}
