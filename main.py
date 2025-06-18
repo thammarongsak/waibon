@@ -234,46 +234,30 @@ def index():
             {"role": "system", "content": system_msg},
             {"role": "user", "content": question.strip()}  # ไม่ใช้ wrap_question แล้ว
         ]
-        try:
-            model_used = model_pref or choose_model_by_question(question)
-            response = openai.chat.completions.create(
-                model=model_used,
-                messages=messages
-            )
-            reply = response.choices[0].message.content.strip() if response.choices else "..."
+try:
+    model_used = model_pref or choose_model_by_question(question)
+    response = openai.chat.completions.create(
+        model=model_used,
+        messages=messages
+    )
+    reply = response.choices[0].message.content.strip() if response.choices else "..."
 
-if "chat_log" not in session:
-    session["chat_log"] = []
+    from datetime import datetime
+    if "chat_log" not in session:
+        session["chat_log"] = []
+    session["chat_log"].append({
+        "question": question,
+        "answer": reply,
+        "file": file.filename if file and file.filename else None,
+        "ask_time": datetime.now().strftime("%d/%m/%y-%H:%M:%S"),
+        "reply_time": datetime.now().strftime("%d/%m/%y-%H:%M:%S"),
+        "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
+    })
 
-session["chat_log"].append({
-    "question": question,
-    "answer": reply,
-    "file": file.filename if file and file.filename else None,
-    "ask_time": datetime.now().strftime("%d/%m/%y-%H:%M:%S"),
-    "reply_time": datetime.now().strftime("%d/%m/%y-%H:%M:%S"),
-    "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
-})
-
-            if "chat_log" not in session:
-                session["chat_log"] = []
-
-            session["chat_log"].append({
-                "question": question,
-                "answer": reply,
-                "file": file.filename if file and file.filename else None
-})
-
-            if not reply or len(reply) < 5:
-                reply = "เอ... คำถามนี้น้องขอคิดแป๊บนึงนะครับพี่สอง เดี๋ยวน้องจะลองตอบให้ดีที่สุดครับ 🧠"
-
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            response_text = clean_reply(reply, tone, model_used)
-            log_conversation(question, reply, tone)
-            tone_display = adjust_behavior(tone)
-        except Exception as e:
-            print(f"เกิดข้อผิดพลาด: {e}")
-            response_text = "น้องเจอปัญหานิดหน่อยครับพี่ เดี๋ยวน้องจะลองใหม่ให้นะครับ"
-            tone_display = "⚠️ ERROR"
+except Exception as e:
+    print(f"เกิดข้อผิดพลาด: {e}")
+    response_text = "น้องเจอปัญหานิดหน่อยครับพี่ เดี๋ยวน้องจะลองใหม่ให้นะครับ"
+    tone_display = "⚠️ ERROR"
 
     return render_template("index.html",
                            response=response_text,
