@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import openai
 import waibon_adaptive_memory
 import humanize
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
@@ -324,9 +325,35 @@ def open_in_browser_guide():
         </div>
     </body>
     </html>
-    '''
+@app.route("/upload_file", methods=["POST"])
+@require_auth
+def upload_file():
+    ...
 
 UPLOAD_DIR = "uploads"
+@app.route("/ask_files", methods=["POST"])
+@require_auth
+def ask_with_files():
+    question = request.form.get("question", "").strip()
+    uploaded_files = request.files.getlist("newfile")
+
+    saved_paths = []
+    for file in uploaded_files:
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            filepath = os.path.join("uploads", filename)
+            file.save(filepath)
+            saved_paths.append(filepath)
+
+    reply_text = waibon_analyze(question, saved_paths)
+    return render_template("index.html",
+        response=reply_text,
+        tone="🎯 Files + Question",
+        model_used="gpt-4o",
+        timestamp=datetime.now().strftime("%H:%M:%S"),
+        remaining='∞',
+        warning=False
+    )
 
 def get_file_info(filename):
     path = os.path.join(UPLOAD_DIR, filename)
@@ -345,6 +372,13 @@ def get_file_info(filename):
     else:
         group = "🗃️ อื่น ๆ"
         ftype = "Unknown"
+
+def waibon_analyze(question: str, file_paths: list) -> str:
+    summary = [f"📎 แนบไฟล์: {os.path.basename(p)}" for p in file_paths]
+    analysis = f"🧠 คำถาม: {question}"
+    return "\n".join(summary + [analysis])
+
+    
     return {
         "name": filename,
         "size": size,
