@@ -207,8 +207,7 @@ def index():
 
     if request.method == "POST" and not warning:
         raw_input = request.form.get("question", "").strip()
-
-            file = request.files.get("file")
+        file = request.files.get("file")
 
     if file and file.filename:
         filepath = os.path.join("uploads", file.filename)
