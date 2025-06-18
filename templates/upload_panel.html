@@ -63,6 +63,18 @@
 
         <button type="submit" class="btn">🚀 วิเคราะห์ไฟล์ที่เลือก</button>
     </form>
+<hr>
+<h2>🧾 ส่งคำถาม + ไฟล์เพื่อวิเคราะห์ทันที</h2>
+
+<form action="/ask_files" method="POST" enctype="multipart/form-data">
+  <label for="question">พิมพ์คำถาม:</label><br>
+  <textarea name="question" rows="3" cols="50" placeholder="อยากให้วิเคราะห์ยังไง..."></textarea><br><br>
+
+  <label for="newfile">เลือกไฟล์แนบหลายไฟล์:</label><br>
+  <input type="file" name="newfile" multiple><br><br>
+
+  <button type="submit">🧠 ถามเลย + แนบไฟล์</button>
+</form>
 
 </body>
 </html>
