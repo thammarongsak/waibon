@@ -371,12 +371,22 @@ def upload_file():
 def analyze_selected():
     selected = request.form.getlist("selected_files")
     if not selected:
-        return "❗ ยังไม่ได้เลือกไฟล์ใด ๆ", 400
+        return redirect("/upload-panel")  # กลับไปหน้าเดิม
+
+    messages = []
     for fname in selected:
         path = os.path.join(UPLOAD_DIR, fname)
-        print(f"🔍 วิเคราะห์ไฟล์: {fname}")
-        # call_analyze_function(path) ← วางฟังก์ชันวิเคราะห์จริงตรงนี้ได้ภายหลัง
-    return f"✅ รับไฟล์ {len(selected)} รายการเพื่อวิเคราะห์แล้วครับพี่"
+        # วิเคราะห์แบบเบา ๆ (หรือจริงจังก็ได้)
+        messages.append(f"🔍 วิเคราะห์ไฟล์: {fname}")
+
+    # Render กลับหน้าเดิม พร้อมข้อความ
+    files = [get_file_info(f) for f in os.listdir(UPLOAD_DIR) if os.path.isfile(os.path.join(UPLOAD_DIR, f))]
+    grouped = {}
+    for f in files:
+        grouped.setdefault(f["group"], []).append(f)
+
+    return render_template("upload_panel.html", grouped_files=grouped, analyze_results=messages)
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
