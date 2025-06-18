@@ -327,10 +327,6 @@ def open_in_browser_guide():
     </html>
     </html>
     '''
-@app.route("/upload_file", methods=["POST"])
-@require_auth
-def upload_file():
-    ...
 
 UPLOAD_DIR = "uploads"
 
