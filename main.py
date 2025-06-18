@@ -209,13 +209,13 @@ def index():
         raw_input = request.form.get("question", "").strip()
         file = request.files.get("file")
 
-    if file and file.filename:
-        filepath = os.path.join("uploads", file.filename)
-        file.save(filepath)
-        response_text = f"✅ พี่ส่งไฟล์: {file.filename} มาแล้วครับ เดี๋ยวน้องจะจัดการให้นะครับ"
-        tone_display = "📂 File Uploaded"
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        return render_template("index.html",
+        if file and file.filename:
+            filepath = os.path.join("uploads", file.filename)
+            file.save(filepath)
+            response_text = f"✅ พี่ส่งไฟล์: {file.filename} มาแล้วครับ เดี๋ยวน้องจะจัดการให้นะครับ"
+            tone_display = "📂 File Uploaded"
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            return render_template("index.html",
                                response=response_text,
                                tone=tone_display,
                                timestamp=timestamp,
