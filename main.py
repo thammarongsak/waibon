@@ -333,6 +333,7 @@ def upload_file():
     ...
 
 UPLOAD_DIR = "uploads"
+
 @app.route("/ask_files", methods=["POST"])
 @require_auth
 def ask_with_files():
@@ -347,45 +348,38 @@ def ask_with_files():
             file.save(filepath)
             saved_paths.append(filepath)
 
-# เตรียมข้อความ Q+A
-combined_text = waibon_analyze(question, saved_paths)
-# เรียก GPT จริง
+    combined_text = waibon_analyze(question, saved_paths)
 
-system_msg = build_personality_message()
-messages = [
-    {"role": "system", "content": system_msg},
-    {"role": "user", "content": combined_text}
-]
+    system_msg = build_personality_message()
+    messages = [
+        {"role": "system", "content": system_msg},
+        {"role": "user", "content": combined_text}
+    ]
 
-model_used = choose_model_by_question(combined_text)
+    model_used = choose_model_by_question(combined_text)
+    response = openai.chat.completions.create(
+        model=model_used,
+        messages=messages
+    )
+    answer_text = response.choices[0].message.content.strip() if response.choices else "น้องขอเวลาคิดแป๊บนึงนะครับพี่สอง 🤔"
 
-response = openai.chat.completions.create(
-    model=model_used,
-    messages=messages
-)
+    if "chat_log" not in session:
+        session["chat_log"] = []
 
-answer_text = response.choices[0].message.content.strip() if response.choices else "น้องขอเวลาคิดแป๊บนึงนะครับพี่สอง 🤔"
-
-
-# สร้าง log ถ้ายังไม่มี
-if "chat_log" not in session:
-    session["chat_log"] = []
-
-# เพิ่มคำถาม-คำตอบเข้า log
     session["chat_log"].append({
         "question": combined_text,
         "answer": answer_text
-})
+    })
 
-    reply_text = waibon_analyze(question, saved_paths)
     return render_template("index.html",
-        response=reply_text,
+        response=answer_text,
         tone="🎯 Files + Question",
         model_used="gpt-4o",
         timestamp=datetime.now().strftime("%H:%M:%S"),
         remaining='∞',
         warning=False
-)
+    )
+
 
 def get_file_info(filename):
     path = os.path.join(UPLOAD_DIR, filename)
