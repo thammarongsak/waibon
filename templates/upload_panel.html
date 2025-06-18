@@ -43,6 +43,13 @@
             </table>
         {% endfor %}
 
+    <h3>📤 อัปโหลดไฟล์ใหม่</h3>
+    <form method="POST" action="/upload_file" enctype="multipart/form-data">
+        <input type="file" name="newfile" required>
+        <button type="submit">อัปโหลดเลย</button>
+    </form>
+    <hr>
+
         <button type="submit" class="btn">🚀 วิเคราะห์ไฟล์ที่เลือก</button>
     </form>
 
