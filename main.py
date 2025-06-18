@@ -240,6 +240,20 @@ def index():
                 messages=messages
             )
             reply = response.choices[0].message.content.strip() if response.choices else "..."
+from datetime import datetime
+
+if "chat_log" not in session:
+    session["chat_log"] = []
+
+session["chat_log"].append({
+    "question": question,
+    "answer": reply,
+    "file": file.filename if file and file.filename else None,
+    "ask_time": datetime.now().strftime("%d/%m/%y-%H:%M:%S"),
+    "reply_time": datetime.now().strftime("%d/%m/%y-%H:%M:%S"),
+    "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
+})
+
             if "chat_log" not in session:
                 session["chat_log"] = []
 
