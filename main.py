@@ -2,6 +2,7 @@ import os
 import json
 import re
 import random
+from datetime import datetime
 from flask import Flask, render_template, request, session, send_file, redirect
 from datetime import datetime, timedelta
 import openai
@@ -240,7 +241,6 @@ def index():
                 messages=messages
             )
             reply = response.choices[0].message.content.strip() if response.choices else "..."
-from datetime import datetime
 
 if "chat_log" not in session:
     session["chat_log"] = []
