@@ -242,30 +242,23 @@ try:
     )
     reply = response.choices[0].message.content.strip() if response.choices else "..."
 
-    from datetime import datetime
-    if "chat_log" not in session:
-        session["chat_log"] = []
-    session["chat_log"].append({
-        "question": question,
-        "answer": reply,
-        "file": file.filename if file and file.filename else None,
-        "ask_time": datetime.now().strftime("%d/%m/%y-%H:%M:%S"),
-        "reply_time": datetime.now().strftime("%d/%m/%y-%H:%M:%S"),
-        "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
-    })
+from datetime import datetime
+now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
+
+session["chat_log"].append({
+    "question": question,
+    "answer": reply,
+    "file": file.filename if file and file.filename else None,
+    "ask_time": now_str,
+    "reply_time": now_str,
+    "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
+})
 
 except Exception as e:
     print(f"เกิดข้อผิดพลาด: {e}")
     response_text = "น้องเจอปัญหานิดหน่อยครับพี่ เดี๋ยวน้องจะลองใหม่ให้นะครับ"
     tone_display = "⚠️ ERROR"
 
-    return render_template("index.html",
-                           response=response_text,
-                           tone=tone_display,
-                           timestamp=timestamp,
-                           remaining=remaining,
-                           warning=warning,
-                           model_used=model_used)
 import os
 
 @app.route("/download_log/<format>")
