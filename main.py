@@ -348,6 +348,20 @@ def upload_panel():
         grouped.setdefault(f["group"], []).append(f)
     return render_template("upload_panel.html", grouped_files=grouped)
 
+@app.route("/upload_file", methods=["POST"])
+@require_auth
+def upload_file():
+    if "newfile" not in request.files:
+        return "❌ ไม่พบไฟล์"
+    file = request.files["newfile"]
+    if file.filename == "":
+        return "⚠️ กรุณาเลือกไฟล์"
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    filepath = os.path.join(UPLOAD_DIR, file.filename)
+    file.save(filepath)
+    return redirect("/upload-panel")
+
+
 @app.route("/analyze_selected", methods=["POST"])
 @require_auth
 def analyze_selected():
