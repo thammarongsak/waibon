@@ -8,6 +8,13 @@ import openai
 import waibon_adaptive_memory
 
 app = Flask(__name__)
+
+@app.before_request
+def block_line_inapp():
+    user_agent = request.headers.get("User-Agent", "")
+    if "Line" in user_agent:
+        return redirect("/open-in-browser-guide")
+        
 app.secret_key = "waibon-secret-key"
 
 # ===== โหลดข้อมูลหลัก =====
@@ -255,6 +262,19 @@ def download_log(format):
     else:
         return "Invalid format", 400
 
+@app.route("/open-in-browser-guide")
+def open_in_browser_guide():
+    return '''
+    <html>
+    <head><title>โปรดเปิดในเบราว์เซอร์</title></head>
+    <body style="font-family:sans-serif; padding:20px;">
+        <h2>🚫 ระบบไม่รองรับการเปิดจากใน LINE</h2>
+        <p>กรุณากดที่ปุ่ม <strong>⋮</strong> หรือ <strong>…</strong> มุมขวาบน</p>
+        <p>แล้วเลือก <strong>"เปิดใน Chrome"</strong> หรือ <strong>"Open in Browser"</strong></p>
+        <p>เพื่อเข้าสู่ระบบได้ตามปกติครับ 🙏</p>
+    </body>
+    </html>
+    '''
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
