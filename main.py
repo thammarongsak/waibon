@@ -347,7 +347,23 @@ def ask_with_files():
 
 # เตรียมข้อความ Q+A
 combined_text = waibon_analyze(question, saved_paths)
-answer_text = "น้องจะวิเคราะห์ให้ทันทีครับพี่สอง ✨ (สมมุติคำตอบไว้ก่อน)"  # ตอนนี้ใช้ mock ไปก่อน
+# เรียก GPT จริง
+
+system_msg = build_personality_message()
+messages = [
+    {"role": "system", "content": system_msg},
+    {"role": "user", "content": combined_text}
+]
+
+model_used = choose_model_by_question(combined_text)
+
+response = openai.chat.completions.create(
+    model=model_used,
+    messages=messages
+)
+
+answer_text = response.choices[0].message.content.strip() if response.choices else "น้องขอเวลาคิดแป๊บนึงนะครับพี่สอง 🤔"
+
 
 # สร้าง log ถ้ายังไม่มี
 if "chat_log" not in session:
