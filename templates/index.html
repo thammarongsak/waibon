@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <title>ถามอะไรก็ได้กับไวบอน 🤖</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
-    <style>
+<meta charset="utf-8"/>
+<title>ถามอะไรก็ได้กับไวบอน 🤖</title>
+<link href="/static/style.css" rel="stylesheet"/>
+<link href="/static/favicon.ico" rel="icon" type="image/x-icon"/>
+<style>
       header {
         position: fixed;
         top: 0;
@@ -52,13 +53,13 @@
     </style>
 </head>
 <body>
-  <header>
-    <h1>ถามอะไรก็ได้กับไวบอน 🤖🐣</h1>
+<header>
+<h1>ถามอะไรก็ได้กับไวบอน 🤖🐣</h1>
 
     {% if tone %}
     <div class="status-box">
         🕹️ ตอนนี้ไวบอนอยู่ในโหมด: <strong>{{ tone }}</strong>
-    </div>
+</div>
     {% endif %}
 
     {% if warning %}
@@ -69,63 +70,51 @@
     <div class="status-box">
         🧪 โหมดส่วนตัว: ไม่จำกัดคำถาม (∞ คำถามใน 10 นาทีนี้ครับ)
     </div>
-    {% elif remaining|int <= 2 %}
+    {% elif remaining|int &lt;= 2 %}
     <div class="status-box warning">
         ⏳ เหลืออีก {{ remaining }} คำถามใน 10 นาทีนี้ครับ
     </div>
     {% endif %}
 
-    <form method="POST" enctype="multipart/form-data">
-        <input 
-            id="question-input"
-            type="text" 
-            name="question" 
-            placeholder="คุยกับไวบอนได้เลยจร้าาา" 
-            value="@3.5 " 
-            autofocus 
-            required 
-            style="width: 100%; padding: 1rem; font-size: 1.2rem;"
-        >
-        <input type="file" name="file">
-        <button type="submit">ถามเลย</button>
-    </form>
-  </header>
-
-  <main>
+    <form enctype="multipart/form-data" method="POST">
+<input autofocus="" id="question-input" name="question" placeholder="คุยกับไวบอนได้เลยจร้าาา" required="" style="width: 100%; padding: 1rem; font-size: 1.2rem;" type="text" value="@3.5 "/>
+<input name="file" type="file"/>
+<button type="submit">ถามเลย</button>
+</form>
+</header>
+<main>
     {% if session.chat_log %}
       <div class="chat-block">
         {% for entry in session.chat_log|reverse %}
           <p class="timestamp">🕒 ถามเมื่อ: {{ entry.ask_time }}</p>
-          <p class="chat-entry">🧍‍♂️ พี่สอง: {{ entry.question }}</p>
-          <p class="chat-entry">📎 แนบไฟล์: {% if entry.file %}{{ entry.file }}{% else %}ไม่มี{% endif %}</p>
-          <p class="timestamp">🕒 ตอบเมื่อ: {{ entry.reply_time }}</p>
-          <p class="chat-entry">🤖 ไวบอน {{ entry.model }}: {{ entry.answer }}</p>
-          <br>
+<p class="chat-entry">🧍‍♂️ พี่สอง: {{ entry.question }}</p>
+<p class="chat-entry">📎 แนบไฟล์: {% if entry.file %}{{ entry.file }}{% else %}ไม่มี{% endif %}</p>
+<p class="timestamp">🕒 ตอบเมื่อ: {{ entry.reply_time }}</p>
+<p class="chat-entry">🤖 ไวบอน {{ entry.model }}: {{ entry.answer }}</p>
+
         {% endfor %}
       </div>
     {% endif %}
 
     <div style="font-size: 0.7rem; color: gray; margin-top: 2rem;">
-        💡 <strong>วิธีเลือกโมเดล:</strong><br>
-        &nbsp;&nbsp;&nbsp;• พิมพ์ <code>@3.5</code> เพื่อตอบด้วย GPT-3.5 (ประหยัด)<br>
-        &nbsp;&nbsp;&nbsp;• พิมพ์ <code>@4o</code> เพื่อใช้ GPT-4o<br>
-        &nbsp;&nbsp;&nbsp;• ไม่พิมพ์อะไรเลย ระบบจะเลือกให้อัตโนมัติ:<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- GPT-4o: ถ้าคำถามมีคำว่า "วิเคราะห์", "เหตุผล", "เพราะอะไร", "เจตนา", "อธิบาย", "เปรียบเทียบ", "ลึกซึ้ง", "กลยุทธ์", "วางแผน", "ซับซ้อน"<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- GPT-3.5: ถ้าเป็นคำถามทั่วไปหรือสั้น ๆ
+        💡 <strong>วิธีเลือกโมเดล:</strong><br/>
+           • พิมพ์ <code>@3.5</code> เพื่อตอบด้วย GPT-3.5 (ประหยัด)<br/>
+           • พิมพ์ <code>@4o</code> เพื่อใช้ GPT-4o<br/>
+           • ไม่พิมพ์อะไรเลย ระบบจะเลือกให้อัตโนมัติ:<br/>
+              - GPT-4o: ถ้าคำถามมีคำว่า "วิเคราะห์", "เหตุผล", "เพราะอะไร", "เจตนา", "อธิบาย", "เปรียบเทียบ", "ลึกซึ้ง", "กลยุทธ์", "วางแผน", "ซับซ้อน"<br/>
+              - GPT-3.5: ถ้าเป็นคำถามทั่วไปหรือสั้น ๆ
     </div>
-  </main>
-
-  <footer>
-    <div style="margin-top: 2rem;">
-        <a href="/download_log/txt" class="btn">📄 ดาวน์โหลด .txt</a>
-        <a href="/download_log/jsonl" class="btn">🧾 ดาวน์โหลด .jsonl</a>
-    </div>
-    <div style="margin-top: 1rem;">
-        <a href="/upload-panel" class="btn" style="background-color: green; padding: 0.6rem 1.2rem; border-radius: 6px; color: white; text-decoration: none;">🗂️ ไปจัดการไฟล์ที่อัปโหลด</a>
-    </div>
-  </footer>
-
-  <script>
+</main>
+<footer>
+<div style="margin-top: 2rem;">
+<a class="btn" href="/download_log/txt">📄 ดาวน์โหลด .txt</a>
+<a class="btn" href="/download_log/jsonl">🧾 ดาวน์โหลด .jsonl</a>
+</div>
+<div style="margin-top: 1rem;">
+<a class="btn" href="/upload-panel" style="background-color: green; padding: 0.6rem 1.2rem; border-radius: 6px; color: white; text-decoration: none;">🗂️ ไปจัดการไฟล์ที่อัปโหลด</a>
+</div>
+</footer>
+<script>
     window.addEventListener('DOMContentLoaded', function() {
       const input = document.getElementById('question-input');
       if (input) {
