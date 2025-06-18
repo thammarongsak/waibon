@@ -351,14 +351,18 @@ def upload_panel():
 @app.route("/upload_file", methods=["POST"])
 @require_auth
 def upload_file():
-    if "newfile" not in request.files:
+    files = request.files.getlist("newfile")
+    if not files:
         return "❌ ไม่พบไฟล์"
-    file = request.files["newfile"]
-    if file.filename == "":
-        return "⚠️ กรุณาเลือกไฟล์"
+
     os.makedirs(UPLOAD_DIR, exist_ok=True)
-    filepath = os.path.join(UPLOAD_DIR, file.filename)
-    file.save(filepath)
+
+    for file in files:
+        if file.filename == "":
+            continue  # ข้ามไฟล์ว่าง
+        filepath = os.path.join(UPLOAD_DIR, file.filename)
+        file.save(filepath)
+
     return redirect("/upload-panel")
 
 
