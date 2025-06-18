@@ -12,7 +12,10 @@ app = Flask(__name__)
 @app.before_request
 def block_line_inapp():
     user_agent = request.headers.get("User-Agent", "")
-    if "Line" in user_agent:
+    path = request.path
+
+    # ถ้ามาจาก LINE และไม่ได้เข้าหน้าแนะนำอยู่แล้ว
+    if "Line" in user_agent and not path.startswith("/open-in-browser-guide"):
         return redirect("/open-in-browser-guide")
         
 app.secret_key = "waibon-secret-key"
