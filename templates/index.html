@@ -36,7 +36,7 @@
         white-space: pre-wrap;
       }
       .chat-entry {
-        margin-bottom: 10px;
+        margin-bottom: 6px;
       }
     </style>
 </head>
@@ -87,15 +87,9 @@
           <div class="chat-entry">
             🧍‍♂️ พี่สอง: {{ entry.question }}
           </div>
-          {% if entry.file %}
           <div class="chat-entry">
-            📎 แนบไฟล์: {{ entry.file }}
+            📎 แนบไฟล์: {% if entry.file %}{{ entry.file }}{% else %}ไม่มี{% endif %}
           </div>
-          {% else %}
-          <div class="chat-entry">
-            📎 แนบไฟล์: ไม่มี
-          </div>
-          {% endif %}
           <div class="chat-entry">
             🤖 ไวบอน: {{ entry.answer }}
           </div>
