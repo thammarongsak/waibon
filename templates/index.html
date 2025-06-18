@@ -42,6 +42,23 @@
     >
     <input type="file" name="file">
     <button type="submit">ถามเลย</button>
+
+{% if session.chat_log %}
+  {% for entry in session.chat_log %}
+    <div class="chat-block" style="border:1px solid #ccc; padding:15px; margin-bottom:10px; border-radius:10px;">
+      <div class="user-question">
+        <strong>🧍‍♂️ พี่สอง:</strong><br>
+        <pre style="white-space:pre-wrap;">{{ entry.question }}</pre>
+      </div>
+      <div class="waibon-reply" style="margin-top:10px;">
+        <strong>🤖 ไวบอน:</strong><br>
+        <pre style="white-space:pre-wrap;">{{ entry.answer }}</pre>
+      </div>
+    </div>
+  {% endfor %}
+{% endif %}
+
+        
 </form>
 
     {% if response %}
