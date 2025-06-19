@@ -39,14 +39,14 @@
       .chat-entry {
         margin: 0;
         padding: 0;
-        line-height: 1;
+        line-height: 0.3;
       }
       .timestamp {
         font-size: 0.6rem;
         color: gray;
         margin: 0;
         padding: 0;
-        line-height: 1;
+        line-height: 0.3;
       }
     </style>
 </head>
@@ -96,7 +96,9 @@
         {% for entry in session.chat_log|reverse %}
           <p class="timestamp">🕒 ถามเมื่อ: {{ entry.ask_time }}</p>
           <p class="chat-entry">🧍‍♂️ พี่สอง: {{ entry.question }}</p>
-          <p class="chat-entry">📎 แนบไฟล์: {% if entry.file %}{{ entry.file }}{% else %}ไม่มี{% endif %}</p>
+          {% if entry.file %}
+          <p class="chat-entry">📎 แนบไฟล์: <a href="/uploads/{{ entry.file }}" target="_blank">{{ entry.file }}</a></p>
+            {% endif %}
           <br>
           <p class="timestamp">🕒 ตอบเมื่อ: {{ entry.reply_time }}</p>
           <p class="chat-entry">🤖 ไวบอน {{ entry.model }}: {{ entry.answer }}</p>
