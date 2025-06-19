@@ -231,11 +231,7 @@ def index():
 
             if "chat_log" not in session:
                 session["chat_log"] = []
-
             session["chat_log"].append({
-            with open("chat_log.jsonl", "a", encoding="utf-8") as f:
-                f.write(json.dumps(session["chat_log"][-1], ensure_ascii=False) + "\n")
-
                 "question": question,
                 "answer": reply,
                 "file": file.filename if file and file.filename else None,
@@ -243,8 +239,10 @@ def index():
                 "reply_time": now_str,
                 "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
             })
-        with open("chat_log.jsonl", "a", encoding="utf-8") as f:
-            f.write(json.dumps(session["chat_log"][-1], ensure_ascii=False) + "\n")
+
+            with open("chat_log.jsonl", "a", encoding="utf-8") as f:
+                f.write(json.dumps(session["chat_log"][-1], ensure_ascii=False) + "\n")
+
 
             return render_template("index.html",
                 response=reply,
