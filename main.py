@@ -439,7 +439,6 @@ def upload_file():
 
     return redirect("/upload-panel")
 
-
 @app.route("/analyze_selected", methods=["POST"])
 @require_auth
 def analyze_selected():
@@ -460,6 +459,20 @@ def analyze_selected():
         grouped.setdefault(f["group"], []).append(f)
 
     return render_template("upload_panel.html", grouped_files=grouped, analyze_results=messages)
+
+@app.route("/delete_selected", methods=["POST"])
+@require_auth
+def delete_selected():
+    selected = request.form.getlist("delete_files")
+    if not selected:
+        return redirect("/upload-panel")
+
+    for fname in selected:
+        path = os.path.join(UPLOAD_DIR, fname)
+        if os.path.exists(path):
+            os.remove(path)
+
+    return redirect("/upload-panel")
 
 
 if __name__ == "__main__":
