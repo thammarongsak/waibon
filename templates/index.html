@@ -39,7 +39,7 @@
       .chat-entry {
         margin: 0;
         padding: 0;
-        line-height: 1.2;
+        line-height: 1.1;
         white-space: pre-wrap;  /* ✅ แสดงบรรทัดใหม่ได้ */
         word-break: break-word; /* ✅ กันข้อความยาวล้น */
       }
@@ -90,24 +90,26 @@
     </form>
   </header>
 
-  <main>
-    {% if session.chat_log %}
-      <p class="chat-block">
-        {% for entry in session.chat_log|reverse %}
-            <p class="chat-entry">
-                🧍‍♂️ พี่สอง: {{ entry.question  | e }}
-                <span class="timestamp">🕒 {{ entry.ask_time }}</span>
-        {% if entry.file %}
-            <p class="chat-entry">📎 แนบไฟล์: 
-            <a href="/uploads/{{ entry.file  | e }}" download>{{ entry.file  | e }}</a>
-        {% endif %}
-            <p class="chat-entry">
-                🤖 ไวบอน {{ entry.model }}: {{ entry.answer | e }}
-                <span class="timestamp">🕒 {{ entry.reply_time }}</span>
-        {% endfor %}
-    {% endif %}
-
-  </main>
+<main>
+  {% if session.chat_log %}
+    <div class="chat-block">
+      {% for entry in session.chat_log|reverse %}
+        <div class="chat-entry">
+          🧍‍♂️ พี่สอง: {{ entry.question | e }}
+          <span class="timestamp">🕒 {{ entry.ask_time }}</span>
+          {% if entry.file %}
+            <br>📎 แนบไฟล์: 
+            <a href="/uploads/{{ entry.file | e }}" download>{{ entry.file | e }}</a>
+          {% endif %}
+        </div>
+        <div class="chat-entry">
+          🤖 ไวบอน {{ entry.model }}: {{ entry.answer | e }}
+          <span class="timestamp">🕒 {{ entry.reply_time }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</main>
 
   <footer>
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-top: 2rem;">
