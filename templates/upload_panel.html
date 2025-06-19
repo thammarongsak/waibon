@@ -68,6 +68,7 @@
                     <th>ประเภท</th>
                     <th>ขนาด</th>
                     <th>วันที่อัปโหลด</th>
+                    <th>การจัดการ</th>
                 </tr>
                 {% for file in files %}
                 <tr>
@@ -76,6 +77,10 @@
                     <td>{{ file.type }}</td>
                     <td>{{ file.size }}</td>
                     <td>{{ file.date }}</td>
+                    <td>
+                        <a href="/uploads/{{ file.name }}" target="_blank">👁️ ดู</a> |
+                        <a href="/uploads/{{ file.name }}" download>⬇️ โหลด</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </table>
