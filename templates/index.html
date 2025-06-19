@@ -39,14 +39,18 @@
       .chat-entry {
         margin: 0;
         padding: 0;
-        line-height: 0;
+        line-height: 1.2;       /* ✅ ชิดแบบไม่ทับ */
+        white-space: pre-wrap;  /* ✅ แสดงบรรทัดใหม่ได้ */
+        word-break: break-word; /* ✅ กันข้อความยาวล้น */
       }
       .timestamp {
         font-size: 0.6rem;
         color: gray;
         margin: 0;
         padding: 0;
-        line-height: 0;
+        line-height: 1.2;       /* ✅ ชิดแบบไม่ทับ */
+        white-space: pre-wrap;  /* ✅ แสดงบรรทัดใหม่ได้ */
+        word-break: break-word; /* ✅ กันข้อความยาวล้น */
       }
     </style>
 </head>
