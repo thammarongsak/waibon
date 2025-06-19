@@ -31,6 +31,7 @@
   </div>
 {% endif %}
     
+ <!-- 🔍 วิเคราะห์ไฟล์ที่เลือก -->
     <form method="POST" action="/analyze_selected">
         {% for group, files in grouped_files.items() %}
             <div class="group-header">{{ group }}</div>
@@ -54,15 +55,44 @@
             </table>
         {% endfor %}
 
-    <h3>📤 อัปโหลดไฟล์ใหม่</h3>
+        <button type="submit" class="btn">🚀 วิเคราะห์ไฟล์ที่เลือก</button>
+    </form>
+    <!-- 🗑️ ลบไฟล์ที่เลือก -->
+    <form method="POST" action="/delete_selected" onsubmit="return confirm('ยืนยันลบไฟล์ที่เลือก?');">
+        {% for group, files in grouped_files.items() %}
+            <div class="group-header">{{ group }}</div>
+            <table>
+                <tr>
+                    <th>เลือก</th>
+                    <th>ชื่อไฟล์</th>
+                    <th>ประเภท</th>
+                    <th>ขนาด</th>
+                    <th>วันที่อัปโหลด</th>
+                </tr>
+                {% for file in files %}
+                <tr>
+                    <td><input type="checkbox" name="delete_files" value="{{ file.name }}"></td>
+                    <td><span class="file-icon">📄</span>{{ file.name }}</td>
+                    <td>{{ file.type }}</td>
+                    <td>{{ file.size }}</td>
+                    <td>{{ file.date }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% endfor %}
+        <button type="submit" class="btn" style="background-color: darkred;">🗑️ ลบไฟล์ที่เลือก</button>
+    </form>
+
+    <hr>
+
+    <!-- 📤 อัปโหลดไฟล์ใหม่ -->
     <form method="POST" action="/upload_file" enctype="multipart/form-data">
+        <h3>📤 อัปโหลดไฟล์ใหม่</h3>
         <input type="file" name="newfile" multiple required>
         <button type="submit">อัปโหลดเลย</button>
     </form>
-    <hr>
 
-        <button type="submit" class="btn">🚀 วิเคราะห์ไฟล์ที่เลือก</button>
-    </form>
+    
 <hr>
 <h2>🧾 ส่งคำถาม + ไฟล์เพื่อวิเคราะห์ทันที</h2>
 
