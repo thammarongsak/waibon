@@ -38,12 +38,15 @@
 .chat-entry {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
-  margin-bottom: 0.4rem;
+  gap: 0.02rem;
+  margin-bottom: 0.1rem;
   white-space: pre-wrap;
   word-break: break-word;
   font-size: 1rem;
-  line-height: 1.05;
+  line-height: 1;
+}
+.chat-block {
+  padding: 5px 0;
 }
       .timestamp {
         font-size: 0.6rem;
@@ -104,7 +107,7 @@
             {% if entry.file %}
               <span>📎 แนบไฟล์: <a href="/uploads/{{ entry.file | e }}" download>{{ entry.file | e }}</a></span>
             {% endif %}
-            <span>🤖 ไวบอน {{ entry.model }}: {{ entry.answer | e }} <span class="timestamp">🕒 {{ entry.reply_time }}</span>
+            <span>🤖 ไวบอน {{ entry.model }}: {{ entry.answer | e }} <span class="timestamp">🕒 {{ entry.reply_time }}</span></span>
           </div>
         {% endfor %}
       </div>
@@ -146,5 +149,19 @@
       }
     });
   </script>
+
+<!--
+✅ วิธีเก็บ chat log ถาวรให้แก้ใน main.py แบบนี้:
+
+1. เก็บ session แบบถาวร:
+   from datetime import timedelta
+   app.permanent_session_lifetime = timedelta(days=365)
+
+2. เพิ่มใน route:
+   session.permanent = True
+
+3. หรือให้บันทึก session.chat_log ลงไฟล์ log.jsonl ทุกครั้งหลังโพสต์
+-->
+
 </body>
 </html>
