@@ -36,13 +36,14 @@
         font-size: 1rem;
       }
 .chat-entry {
-  margin: 0;
-  padding: 0;
-  line-height: 1.05;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
   margin-bottom: 0.4rem;
   white-space: pre-wrap;
   word-break: break-word;
   font-size: 1rem;
+  line-height: 1.05;
 }
       .timestamp {
         font-size: 0.6rem;
@@ -93,23 +94,23 @@
 
   
   
+  
   <main>
     {% if session.chat_log %}
       <div class="chat-block">
         {% for entry in session.chat_log|reverse %}
           <div class="chat-entry">
-            🧍‍♂️ พี่สอง: {{ entry.question | e }}
-            <span class="timestamp">🕒 {{ entry.ask_time }}</span><br>
+            <span>🧍‍♂️ พี่สอง: {{ entry.question | e }} <span class="timestamp">🕒 {{ entry.ask_time }}</span></span>
             {% if entry.file %}
-              📎 แนบไฟล์: <a href="/uploads/{{ entry.file | e }}" download>{{ entry.file | e }}</a><br>
+              <span>📎 แนบไฟล์: <a href="/uploads/{{ entry.file | e }}" download>{{ entry.file | e }}</a></span>
             {% endif %}
-            🤖 ไวบอน {{ entry.model }}: {{ entry.answer | e }}
-            <span class="timestamp">🕒 {{ entry.reply_time }}</span>
+            <span>🤖 ไวบอน {{ entry.model }}: {{ entry.answer | e }} <span class="timestamp">🕒 {{ entry.reply_time }}</span></span>
           </div>
         {% endfor %}
       </div>
     {% endif %}
   </main>
+
 
 
 
