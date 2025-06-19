@@ -11,6 +11,7 @@ import humanize
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+app.permanent_session_lifetime = timedelta(days=365)
 
 @app.before_request
 def block_line_inapp():
@@ -190,13 +191,6 @@ def require_auth(f):
         return f(*args, **kwargs)
     return decorated
 
-from flask import send_from_directory
-
-@app.route('/uploads/<path:filename>')
-@require_auth
-def serve_uploaded_file(filename):
-    return send_from_directory(UPLOAD_DIR, filename, as_attachment=False)
-
 @app.route("/", methods=["GET", "POST"])
 @require_auth
 def index():
@@ -209,6 +203,7 @@ def index():
     file = None
 
     if request.method == "POST":
+        session.permanent = True
         question = request.form["question"]
         tone = "neutral"
         model_pref = "gpt-4o" if "@4o" in question else "gpt-3.5-turbo" if "@3.5" in question else None
@@ -236,6 +231,9 @@ def index():
                 session["chat_log"] = []
 
             session["chat_log"].append({
+            with open("chat_log.jsonl", "a", encoding="utf-8") as f:
+                f.write(json.dumps(session["chat_log"][-1], ensure_ascii=False) + "\n")
+
                 "question": question,
                 "answer": reply,
                 "file": file.filename if file and file.filename else None,
@@ -380,6 +378,9 @@ def ask_with_files():
         session["chat_log"] = []
 
     session["chat_log"].append({
+            with open("chat_log.jsonl", "a", encoding="utf-8") as f:
+                f.write(json.dumps(session["chat_log"][-1], ensure_ascii=False) + "\n")
+
         "question": combined_text,
         "answer": answer_text
     })
@@ -393,6 +394,7 @@ def ask_with_files():
         warning=False
     )
 
+
 def get_file_info(filename):
     path = os.path.join(UPLOAD_DIR, filename)
     size = humanize.naturalsize(os.path.getsize(path))
@@ -401,7 +403,7 @@ def get_file_info(filename):
     if ext in [".wav", ".mp3"]:
         group = "🎵 ไฟล์เสียง"
         ftype = "Audio"
-    elif ext == ".zip":
+    elif ext in [".zip"]:
         group = "📦 ZIP Archive"
         ftype = "ZIP"
     elif ext in [".tsv", ".jsonl", ".txt"]:
@@ -411,6 +413,12 @@ def get_file_info(filename):
         group = "🗃️ อื่น ๆ"
         ftype = "Unknown"
 
+def waibon_analyze(question: str, file_paths: list) -> str:
+    summary = [f"📎 แนบไฟล์: {os.path.basename(p)}" for p in file_paths]
+    analysis = f"🧠 คำถาม: {question}"
+    return "\n".join(summary + [analysis])
+
+    
     return {
         "name": filename,
         "size": size,
@@ -446,6 +454,7 @@ def upload_file():
 
     return redirect("/upload-panel")
 
+
 @app.route("/analyze_selected", methods=["POST"])
 @require_auth
 def analyze_selected():
@@ -467,34 +476,6 @@ def analyze_selected():
 
     return render_template("upload_panel.html", grouped_files=grouped, analyze_results=messages)
 
-@app.route("/delete_selected", methods=["POST"])
-@require_auth
-def delete_selected():
-    selected = request.form.getlist("delete_files")
-    if not selected:
-        return redirect("/upload-panel")
-
-    for fname in selected:
-        path = os.path.join(UPLOAD_DIR, fname)
-        if os.path.exists(path):
-            os.remove(path)
-
-    return redirect("/upload-panel")
-
-@app.route("/clear_all_files", methods=["POST"])
-@require_auth
-def clear_all_files():
-    for fname in os.listdir(UPLOAD_DIR):
-        path = os.path.join(UPLOAD_DIR, fname)
-        if os.path.isfile(path):
-            os.remove(path)
-    return redirect("/upload-panel")
-
-@app.route("/clear_chat", methods=["POST"])
-@require_auth
-def clear_chat():
-    session.pop("chat_log", None)
-    return redirect("/")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
