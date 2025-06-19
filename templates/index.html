@@ -39,14 +39,14 @@
       .chat-entry {
         margin: 0;
         padding: 0;
-        line-height: 0.1;
+        line-height: 0;
       }
       .timestamp {
         font-size: 0.6rem;
         color: gray;
         margin: 0;
         padding: 0;
-        line-height: 0.1;
+        line-height: 0;
       }
     </style>
 </head>
@@ -94,16 +94,16 @@
     {% if session.chat_log %}
       <div class="chat-block">
         {% for entry in session.chat_log|reverse %}
-          <p class="timestamp">🕒 ถามเมื่อ: {{ entry.ask_time }}</p>
-          <p class="chat-entry">🧍‍♂️ พี่สอง: {{ entry.question }}</p>
+          <div class="timestamp">🕒 ถามเมื่อ: {{ entry.ask_time }}</div>
+          <div class="chat-entry">🧍‍♂️ พี่สอง: {{ entry.question }}</div>
           {% if entry.file %}
-          <p class="chat-entry">📎 แนบไฟล์: <a href="/uploads/{{ entry.file }}" target="_blank">{{ entry.file }}</a></p>
+          <div class="chat-entry">📎 แนบไฟล์: <a href="/uploads/{{ entry.file }}" target="_blank">{{ entry.file }}</a></div>
             {% endif %}
           <br>
-          <p class="timestamp">🕒 ตอบเมื่อ: {{ entry.reply_time }}</p>
-          <p class="chat-entry">🤖 ไวบอน {{ entry.model }}: {{ entry.answer }}</p>
+          <div class="timestamp">🕒 ตอบเมื่อ: {{ entry.reply_time }}</div>
+          <div class="chat-entry">🤖 ไวบอน {{ entry.model }}: {{ entry.answer }}</div>
         {% endfor %}
-      </div>
+      #</div>
     {% endif %}
 
     <div style="font-size: 0.7rem; color: gray; margin-top: 2rem;">
