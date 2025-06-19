@@ -190,6 +190,13 @@ def require_auth(f):
         return f(*args, **kwargs)
     return decorated
 
+from flask import send_from_directory
+
+@app.route('/uploads/<path:filename>')
+@require_auth
+def serve_uploaded_file(filename):
+    return send_from_directory(UPLOAD_DIR, filename, as_attachment=False)
+
 @app.route("/", methods=["GET", "POST"])
 @require_auth
 def index():
