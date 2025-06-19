@@ -12,7 +12,6 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.permanent_session_lifetime = timedelta(days=365)
-app.permanent_session_lifetime = timedelta(days=365)
 
 @app.before_request
 def block_line_inapp():
@@ -205,7 +204,6 @@ def index():
 
     if request.method == "POST":
         session.permanent = True
-        session.permanent = True
         question = request.form["question"]
         tone = "neutral"
         model_pref = "gpt-4o" if "@4o" in question else "gpt-3.5-turbo" if "@3.5" in question else None
@@ -231,18 +229,19 @@ def index():
 
             if "chat_log" not in session:
                 session["chat_log"] = []
-            session["chat_log"].append({
-                "question": question,
-                "answer": reply,
-                "file": file.filename if file and file.filename else None,
-                "ask_time": now_str,
-                "reply_time": now_str,
-                "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
-            })
 
-            with open("chat_log.jsonl", "a", encoding="utf-8") as f:
-                f.write(json.dumps(session["chat_log"][-1], ensure_ascii=False) + "\n")
-
+            log_item = {
+    "question": question,
+    "answer": reply,
+    "file": file.filename if file and file.filename else None,
+    "ask_time": now_str,
+    "reply_time": now_str,
+    "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
+}
+session["chat_log"].append(log_item)
+with open("chat_log.jsonl", "a", encoding="utf-8") as f:
+    f.write(json.dumps(log_item, ensure_ascii=False) + "
+")
 
             return render_template("index.html",
                 response=reply,
@@ -379,13 +378,18 @@ def ask_with_files():
     if "chat_log" not in session:
         session["chat_log"] = []
 
-    session["chat_log"].append({
-            with open("chat_log.jsonl", "a", encoding="utf-8") as f:
-                f.write(json.dumps(session["chat_log"][-1], ensure_ascii=False) + "\n")
-
-        "question": combined_text,
-        "answer": answer_text
-    })
+    log_item = {
+    "question": question,
+    "answer": reply,
+    "file": file.filename if file and file.filename else None,
+    "ask_time": now_str,
+    "reply_time": now_str,
+    "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
+}
+session["chat_log"].append(log_item)
+with open("chat_log.jsonl", "a", encoding="utf-8") as f:
+    f.write(json.dumps(log_item, ensure_ascii=False) + "
+")
 
     return render_template("index.html",
         response=answer_text,
