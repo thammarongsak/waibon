@@ -481,6 +481,14 @@ def delete_selected():
 
     return redirect("/upload-panel")
 
+@app.route("/clear_all_files", methods=["POST"])
+@require_auth
+def clear_all_files():
+    for fname in os.listdir(UPLOAD_DIR):
+        path = os.path.join(UPLOAD_DIR, fname)
+        if os.path.isfile(path):
+            os.remove(path)
+    return redirect("/upload-panel")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
