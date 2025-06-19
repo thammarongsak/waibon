@@ -490,6 +490,12 @@ def clear_all_files():
             os.remove(path)
     return redirect("/upload-panel")
 
+@app.route("/clear_chat", methods=["POST"])
+@require_auth
+def clear_chat():
+    session.pop("chat_log", None)
+    return redirect("/")
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
