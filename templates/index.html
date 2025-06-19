@@ -25,12 +25,12 @@
         z-index: 1000;
       }
       main {
-        padding-top: 180px;
-        padding-bottom: 160px;
+        padding-top: 120px;
+        padding-bottom: 20px;
       }
       .chat-block {
-        border: 1px solid #ccc;
-        padding: 15px;
+        border: none;
+        padding: 4px;
         border-radius: 10px;
         margin-bottom: 10px;
         white-space: pre-wrap;
@@ -39,11 +39,13 @@
       .chat-entry {
         margin: 0;
         padding: 0;
-        line-height: 1.2;       /* ✅ ชิดแบบไม่ทับ */
+        line-height: 1.2;       /* ✅ ชิดแบบไม่ทับ 1px solid #ccc*/
+        font-size: 1rem;
         white-space: pre-wrap;  /* ✅ แสดงบรรทัดใหม่ได้ */
         word-break: break-word; /* ✅ กันข้อความยาวล้น */
       }
       .timestamp {
+        display: inline;
         font-size: 0.6rem;
         color: gray;
         margin: 0;
@@ -109,6 +111,15 @@
       </div>
     {% endif %}
 
+
+  </main>
+
+  <footer>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-top: 2rem;">
+    <div style="margin-top: 2rem; flex: 0 0 auto;">
+        <a href="/download_log/txt" class="btn">📄 ดาวน์โหลด .txt</a>
+        <a href="/download_log/jsonl" class="btn">🧾 ดาวน์โหลด .jsonl</a>
+    </div>
     <div style="font-size: 0.7rem; color: gray; margin-top: 2rem;">
         💡 <strong>วิธีเลือกโมเดล:</strong><br>
         &nbsp;&nbsp;&nbsp;• พิมพ์ <code>@3.5</code> เพื่อตอบด้วย GPT-3.5 (ประหยัด)<br>
@@ -116,13 +127,6 @@
         &nbsp;&nbsp;&nbsp;• ไม่พิมพ์อะไรเลย ระบบจะเลือกให้อัตโนมัติ:<br>
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- GPT-4o: ถ้าคำถามมีคำว่า "วิเคราะห์", "เหตุผล", "เพราะอะไร", "เจตนา", "อธิบาย", "เปรียบเทียบ", "ลึกซึ้ง", "กลยุทธ์", "วางแผน", "ซับซ้อน"<br>
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- GPT-3.5: ถ้าเป็นคำถามทั่วไปหรือสั้น ๆ
-    </div>
-  </main>
-
-  <footer>
-    <div style="margin-top: 2rem;">
-        <a href="/download_log/txt" class="btn">📄 ดาวน์โหลด .txt</a>
-        <a href="/download_log/jsonl" class="btn">🧾 ดาวน์โหลด .jsonl</a>
     </div>
     <div style="margin-top: 1rem;">
         <a href="/upload-panel" class="btn" style="background-color: green; padding: 0.6rem 1.2rem; border-radius: 6px; color: white; text-decoration: none;">🗂️ ไปจัดการไฟล์ที่อัปโหลด</a>
