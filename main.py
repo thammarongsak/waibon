@@ -386,7 +386,6 @@ def ask_with_files():
         warning=False
     )
 
-
 def get_file_info(filename):
     path = os.path.join(UPLOAD_DIR, filename)
     size = humanize.naturalsize(os.path.getsize(path))
@@ -395,7 +394,7 @@ def get_file_info(filename):
     if ext in [".wav", ".mp3"]:
         group = "🎵 ไฟล์เสียง"
         ftype = "Audio"
-    elif ext in [".zip"]:
+    elif ext == ".zip":
         group = "📦 ZIP Archive"
         ftype = "ZIP"
     elif ext in [".tsv", ".jsonl", ".txt"]:
@@ -405,12 +404,6 @@ def get_file_info(filename):
         group = "🗃️ อื่น ๆ"
         ftype = "Unknown"
 
-def waibon_analyze(question: str, file_paths: list) -> str:
-    summary = [f"📎 แนบไฟล์: {os.path.basename(p)}" for p in file_paths]
-    analysis = f"🧠 คำถาม: {question}"
-    return "\n".join(summary + [analysis])
-
-    
     return {
         "name": filename,
         "size": size,
