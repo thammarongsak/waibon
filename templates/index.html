@@ -121,6 +121,9 @@
     </div>
     <div style="margin-top: 1rem;">
         <a href="/upload-panel" class="btn" style="background-color: green; padding: 0.6rem 1.2rem; border-radius: 6px; color: white; text-decoration: none;">🗂️ ไปจัดการไฟล์ที่อัปโหลด</a>
+        <form method="POST" action="/clear_chat" onsubmit="return confirm('ต้องการเริ่มบทสนทนาใหม่หรือไม่?');" style="margin-top: 1rem;">
+            <button type="submit" class="btn" style="background-color: orange;">🧹 เคลียร์บทสนทนา</button>
+        </form>
     </div>
   </footer>
 
