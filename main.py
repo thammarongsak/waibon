@@ -11,7 +11,6 @@ import humanize
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.permanent_session_lifetime = timedelta(days=365)
 
 @app.before_request
 def block_line_inapp():
@@ -203,7 +202,6 @@ def index():
     file = None
 
     if request.method == "POST":
-        session.permanent = True
         question = request.form["question"]
         tone = "neutral"
         model_pref = "gpt-4o" if "@4o" in question else "gpt-3.5-turbo" if "@3.5" in question else None
@@ -230,20 +228,7 @@ def index():
             if "chat_log" not in session:
                 session["chat_log"] = []
 
-            chat_item = {
-                "question": question,
-                "answer": reply,
-                "file": file.filename if file and file.filename else None,
-                "ask_time": now_str,
-                "reply_time": now_str,
-                "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
-            }
-            session["chat_log"].append(chat_item)
-            with open("chat_log.jsonl", "a", encoding="utf-8") as f:
-                f.write(json.dumps(chat_item, ensure_ascii=False) + "\n")
-            with open("chat_log.jsonl", "a", encoding="utf-8") as f:
-                f.write(json.dumps(session["chat_log"][-1], ensure_ascii=False) + "\n")
-
+            session["chat_log"].append({
                 "question": question,
                 "answer": reply,
                 "file": file.filename if file and file.filename else None,
@@ -387,16 +372,16 @@ def ask_with_files():
     if "chat_log" not in session:
         session["chat_log"] = []
 
-    chat_item = {
+    session["chat_log"].append({
         "question": combined_text,
         "answer": answer_text
-    }
-    session["chat_log"].append(chat_item)
-    with open("chat_log.jsonl", "a", encoding="utf-8") as f:
-        f.write(json.dumps(chat_item, ensure_ascii=False) + "\n")
+    })
 
-
+    return render_template("index.html",
         response=answer_text,
+        tone="🎯 Files + Question",
+        model_used="gpt-4o",
+        timestamp=datetime.now().strftime("%H:%M:%S"),
         remaining='∞',
         warning=False
     )
@@ -405,45 +390,85 @@ def ask_with_files():
 def get_file_info(filename):
     path = os.path.join(UPLOAD_DIR, filename)
     size = humanize.naturalsize(os.path.getsize(path))
+    date = datetime.fromtimestamp(os.path.getmtime(path)).strftime("%Y-%m-%d")
     ext = os.path.splitext(filename)[1].lower()
+    if ext in [".wav", ".mp3"]:
+        group = "🎵 ไฟล์เสียง"
+        ftype = "Audio"
+    elif ext in [".zip"]:
+        group = "📦 ZIP Archive"
+        ftype = "ZIP"
+    elif ext in [".tsv", ".jsonl", ".txt"]:
+        group = "📄 ตาราง / ข้อความ"
+        ftype = "Text"
     else:
+        group = "🗃️ อื่น ๆ"
+        ftype = "Unknown"
 
 def waibon_analyze(question: str, file_paths: list) -> str:
+    summary = [f"📎 แนบไฟล์: {os.path.basename(p)}" for p in file_paths]
+    analysis = f"🧠 คำถาม: {question}"
+    return "\n".join(summary + [analysis])
 
     
     return {
+        "name": filename,
+        "size": size,
+        "date": date,
+        "group": group,
+        "type": ftype
+    }
 
+@app.route("/upload-panel")
 @require_auth
 def upload_panel():
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     files = [get_file_info(f) for f in os.listdir(UPLOAD_DIR) if os.path.isfile(os.path.join(UPLOAD_DIR, f))]
+    grouped = {}
     for f in files:
+        grouped.setdefault(f["group"], []).append(f)
+    return render_template("upload_panel.html", grouped_files=grouped)
 
+@app.route("/upload_file", methods=["POST"])
 @require_auth
 def upload_file():
+    files = request.files.getlist("newfile")
     if not files:
+        return "❌ ไม่พบไฟล์"
 
     os.makedirs(UPLOAD_DIR, exist_ok=True)
 
     for file in files:
+        if file.filename == "":
             continue  # ข้ามไฟล์ว่าง
         filepath = os.path.join(UPLOAD_DIR, file.filename)
         file.save(filepath)
 
+    return redirect("/upload-panel")
 
 
+@app.route("/analyze_selected", methods=["POST"])
 @require_auth
 def analyze_selected():
+    selected = request.form.getlist("selected_files")
     if not selected:
+        return redirect("/upload-panel")  # กลับไปหน้าเดิม
 
     messages = []
     for fname in selected:
         path = os.path.join(UPLOAD_DIR, fname)
         # วิเคราะห์แบบเบา ๆ (หรือจริงจังก็ได้)
+        messages.append(f"🔍 วิเคราะห์ไฟล์: {fname}")
 
     # Render กลับหน้าเดิม พร้อมข้อความ
     files = [get_file_info(f) for f in os.listdir(UPLOAD_DIR) if os.path.isfile(os.path.join(UPLOAD_DIR, f))]
+    grouped = {}
     for f in files:
+        grouped.setdefault(f["group"], []).append(f)
+
+    return render_template("upload_panel.html", grouped_files=grouped, analyze_results=messages)
 
 
-
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
