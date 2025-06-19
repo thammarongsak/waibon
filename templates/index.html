@@ -97,9 +97,9 @@
           <p class="timestamp">🕒 ถามเมื่อ: {{ entry.ask_time }}</p>
           <p class="chat-entry">🧍‍♂️ พี่สอง: {{ entry.question }}</p>
           <p class="chat-entry">📎 แนบไฟล์: {% if entry.file %}{{ entry.file }}{% else %}ไม่มี{% endif %}</p>
+          <br>
           <p class="timestamp">🕒 ตอบเมื่อ: {{ entry.reply_time }}</p>
           <p class="chat-entry">🤖 ไวบอน {{ entry.model }}: {{ entry.answer }}</p>
-          <br>
         {% endfor %}
       </div>
     {% endif %}
