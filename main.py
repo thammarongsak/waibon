@@ -12,6 +12,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.permanent_session_lifetime = timedelta(days=365)
+app.permanent_session_lifetime = timedelta(days=365)
 
 @app.before_request
 def block_line_inapp():
@@ -203,6 +204,7 @@ def index():
     file = None
 
     if request.method == "POST":
+        session.permanent = True
         session.permanent = True
         question = request.form["question"]
         tone = "neutral"
