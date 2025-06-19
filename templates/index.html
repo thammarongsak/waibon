@@ -29,30 +29,23 @@
         padding-bottom: 160px;
       }
       .chat-block {
-        border: none;
-        padding: 4px;
+        border: 1px solid #ccc;
+        padding: 15px;
         border-radius: 10px;
         margin-bottom: 10px;
-        white-space: pre-wrap;
         font-size: 1rem;
       }
       .chat-entry {
         margin: 0;
         padding: 0;
-        line-height: 1.2;       /* ✅ ชิดแบบไม่ทับ 1px solid #ccc*/
-        font-size: 1rem;
-        white-space: pre-wrap;  /* ✅ แสดงบรรทัดใหม่ได้ */
-        word-break: break-word; /* ✅ กันข้อความยาวล้น */
+        line-height: 1.2;
       }
       .timestamp {
-        display: inline;
         font-size: 0.6rem;
         color: gray;
         margin: 0;
         padding: 0;
-        line-height: 1.2;       /* ✅ ชิดแบบไม่ทับ */
-        white-space: pre-wrap;  /* ✅ แสดงบรรทัดใหม่ได้ */
-        word-break: break-word; /* ✅ กันข้อความยาวล้น */
+        line-height: 1.2;
       }
     </style>
 </head>
@@ -115,7 +108,7 @@
   </main>
 
   <footer>
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-top: 2rem;">
+    <div style="margin-top: 2rem;">
         <a href="/download_log/txt" class="btn">📄 ดาวน์โหลด .txt</a>
         <a href="/download_log/jsonl" class="btn">🧾 ดาวน์โหลด .jsonl</a>
     </div>
