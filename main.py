@@ -193,6 +193,7 @@ def require_auth(f):
 @app.route("/", methods=["GET", "POST"])
 @require_auth
 def index():
+    session.permanent = True
     warning = False
     remaining = '∞'
     tone = None
@@ -226,7 +227,8 @@ def index():
             now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
 
             if "chat_log" not in session:
-                session["chat_log"] = []
+    if "chat_log" not in session:
+        session["chat_log"] = []
 
             session["chat_log"].append({
                 "question": question,
