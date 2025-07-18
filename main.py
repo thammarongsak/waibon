@@ -21,7 +21,8 @@ def block_line_inapp():
     if "Line" in user_agent and not path.startswith("/open-in-browser-guide"):
         return redirect("/open-in-browser-guide")
         
-app.secret_key = "waibon-secret-key"
+# app.secret_key = "waibon-secret-key"
+app.secret_key = os.getenv("SECRET_KEY", "default_secret")
 
 # ===== โหลดข้อมูลหลัก =====
 with open("waibon_heart_unified.json", encoding="utf-8") as f:
@@ -60,7 +61,6 @@ def build_personality_message():
 def choose_model_by_question(text: str) -> str:
     lowered = text.lower()
 
-    # ✅ ถ้าพี่ระบุ @ อะไรมา ให้ใช้ตามนั้น
     if "@llama" in lowered:
         return "llama3-70b-8192"
     elif "@4o" in lowered:
@@ -68,7 +68,6 @@ def choose_model_by_question(text: str) -> str:
     elif "@3.5" in lowered:
         return "gpt-3.5-turbo"
 
-    # 🔍 วิเคราะห์คำถามเพื่อเลือกโมเดลอัตโนมัติ
     if any(word in lowered for word in [
         "วิเคราะห์", "เหตุผล", "เพราะอะไร", "เจตนา", 
         "อธิบาย", "เปรียบเทียบ", "ลึกซึ้ง", 
@@ -77,9 +76,8 @@ def choose_model_by_question(text: str) -> str:
         return "gpt-4o"
     elif len(lowered.split()) > 30:
         return "gpt-4o"
-
-    # ✅ ถ้าไม่เข้าเงื่อนไขใดเลย → ใช้ LLaMA เป็น default
-    return "llama3-70b-8192"
+    else:
+        return os.getenv("OPENAI_MODEL", "llama3-70b-8192")
 
 def parse_model_selector(message: str):
     message = message.strip()
@@ -96,9 +94,6 @@ def parse_model_selector(message: str):
         return None, message.strip()
 
 def switch_model_and_provider(model_name: str):
-    """
-    ปรับค่า openai.api_key และ base_url ตามโมเดลที่ใช้งาน
-    """
     if "llama" in model_name:
         openai.api_key = os.getenv("LLAMA_API_KEY")
         openai.base_url = os.getenv("LLAMA_BASE_URL", "https://api.groq.com/openai/v1")
@@ -138,17 +133,15 @@ def sanitize_user_input(text):
             return "ขอโทษครับพี่ คำนี้ไวบอนขอไม่ตอบนะครับ 🙏"
     return text
 
-def get_model_display_name(model_name: str) -> str:
-    if "llama" in model_name:
+def get_model_display_name(name: str) -> str:
+    if "llama" in name:
         return "LLaMA 3"
-    elif "gpt-4o" in model_name:
+    elif "gpt-4o" in name:
         return "GPT-4o"
-    elif "gpt-4" in model_name:
-        return "GPT-4"
-    elif "gpt-3.5" in model_name:
+    elif "gpt-3.5" in name:
         return "GPT-3.5"
     else:
-        return model_name
+        return name
 
 def clean_reply(text, tone="neutral", model_used="gpt-4o", mode="default"):
     original = text.strip().lower()
@@ -219,97 +212,77 @@ def require_auth(f):
     return decorated
 
 @app.route("/", methods=["GET", "POST"])
-@require_auth
 def index():
-    warning = False
-    remaining = '∞'
-    tone = None
-    response_text = ""
-    model_used = ""
-    question = ""
-    file = None
+    remaining = "∞"
+    warning = None
 
-if request.method == "POST":
-    question = request.form["question"]
-    tone = "neutral"
+    if request.method == "POST":
+        question = request.form["question"]
+        tone = "neutral"
 
-    # ✅ เลือกโมเดลตาม prefix
-    if "@llama" in question:
-        model_pref = "llama3-70b-8192"
-    elif "@4o" in question:
-        model_pref = "gpt-4o"
-    elif "@3.5" in question:
-        model_pref = "gpt-3.5-turbo"
-    else:
-        model_pref = None
+        if "@llama" in question:
+            model_pref = "llama3-70b-8192"
+        elif "@4o" in question:
+            model_pref = "gpt-4o"
+        elif "@3.5" in question:
+            model_pref = "gpt-3.5-turbo"
+        else:
+            model_pref = None
 
-    # ✅ ล้าง prefix ออกจากคำถาม
-    question = question.replace("@llama", "").replace("@4o", "").replace("@3.5", "").strip()
-    file = request.files.get("file")
+        question = question.replace("@llama", "").replace("@4o", "").replace("@3.5", "").strip()
+        file = request.files.get("file")
 
-    # ✅ เตรียม messages
-    messages = [{"role": "system", "content": "คุณคือผู้ช่วยชื่อไวบอน"}]
-    if "chat_log" in session:
-        for entry in session["chat_log"]:
-            messages.append({"role": "user", "content": entry["question"]})
-            messages.append({"role": "assistant", "content": entry["answer"]})
-    messages.append({"role": "user", "content": question})
+        messages = [{"role": "system", "content": "คุณคือผู้ช่วยชื่อไวบอน"}]
+        if "chat_log" in session:
+            for entry in session["chat_log"]:
+                messages.append({"role": "user", "content": entry["question"]})
+                messages.append({"role": "assistant", "content": entry["answer"]})
+        messages.append({"role": "user", "content": question})
 
-    try:
-        # ✅ เลือกโมเดลจริง
-        model_used = model_pref or choose_model_by_question(question)
-        switch_model_and_provider(model_used)
+        try:
+            model_used = model_pref or choose_model_by_question(question)
+            switch_model_and_provider(model_used)
 
-        # ✅ เรียก API
-        response = openai.chat.completions.create(
-            model=model_used,
-            messages=messages
-        )
+            response = openai.chat.completions.create(
+                model=model_used,
+                messages=messages
+            )
 
-        reply = response.choices[0].message.content.strip() if response.choices else "..."
+            reply = response.choices[0].message.content.strip() if response.choices else "..."
+            model_label = get_model_display_name(model_used)
+            reply = f"(โมเดล: {model_label})\n\n{reply}"
 
-        # ✅ ใส่ชื่อโมเดลในคำตอบ
-        model_label = get_model_display_name(model_used)
-        reply = f"(โมเดล: {model_label})\n\n{reply}"
+            now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
 
-        now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
+            if "chat_log" not in session:
+                session["chat_log"] = []
 
-        # ✅ เก็บ log ลง session
-        if "chat_log" not in session:
-            session["chat_log"] = []
+            session["chat_log"].append({
+                "question": question,
+                "answer": reply,
+                "file": file.filename if file and file.filename else None,
+                "ask_time": now_str,
+                "reply_time": now_str,
+                "model": model_label
+            })
 
-        session["chat_log"].append({
-            "question": question,
-            "answer": reply,
-            "file": file.filename if file and file.filename else None,
-            "ask_time": now_str,
-            "reply_time": now_str,
-            "model": model_label
-        })
+            return render_template("index.html",
+                response=reply,
+                tone=tone,
+                timestamp=now_str,
+                remaining=remaining,
+                warning=warning,
+                model_used=model_used
+            )
 
-        return render_template("index.html",
-            response=reply,
-            tone=adjust_behavior(tone),
-            timestamp=now_str,
-            remaining=remaining,
-            warning=warning,
-            model_used=model_label
-        )
+        except Exception as e:
+            return f"❌ ERROR: {str(e)}"
 
-    except Exception as e:
-        print(f"เกิดข้อผิดพลาด: {e}")
-        response_text = "น้องเจอปัญหานิดหน่อยครับพี่ เดี๋ยวน้องจะลองใหม่ให้นะครับ"
-        tone_display = "⚠️ ERROR"
-        now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
-
-        return render_template("index.html",
-            response=response_text,
-            tone=tone_display,
-            timestamp=now_str,
-            remaining=remaining,
-            warning=True,
-            model_used="ERROR"
-        )
+    return render_template("index.html",
+        tone="neutral",
+        remaining=remaining,
+        warning=warning
+    )
 
     return render_template("index.html",
         response=response_text,
