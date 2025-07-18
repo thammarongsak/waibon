@@ -232,10 +232,22 @@ def index():
     if request.method == "POST":
         question = request.form["question"]
         tone = "neutral"
-        model_pref = "gpt-4o" if "@4o" in question else "gpt-3.5-turbo" if "@3.5" in question else None
-        question = question.replace("@4o", "").replace("@3.5", "").strip()
+
+        # ✅ เลือกโมเดลตาม prefix
+        if "@llama" in question:
+            model_pref = "llama3-70b-8192"
+        elif "@4o" in question:
+            model_pref = "gpt-4o"
+        elif "@3.5" in question:
+            model_pref = "gpt-3.5-turbo"
+        else:
+            model_pref = None
+
+        # ✅ ล้าง prefix ออกจากคำถาม
+        question = question.replace("@llama", "").replace("@4o", "").replace("@3.5", "").strip()
         file = request.files.get("file")
 
+        # ✅ เตรียม messages
         messages = [{"role": "system", "content": "คุณคือผู้ช่วยชื่อไวบอน"}]
         if "chat_log" in session:
             for entry in session["chat_log"]:
@@ -244,15 +256,25 @@ def index():
         messages.append({"role": "user", "content": question})
 
         try:
+            # ✅ เลือกโมเดลจริง
             model_used = model_pref or choose_model_by_question(question)
+            switch_model_and_provider(model_used)
+
+            # ✅ เรียก API
             response = openai.chat.completions.create(
                 model=model_used,
                 messages=messages
             )
+
             reply = response.choices[0].message.content.strip() if response.choices else "..."
+
+            # ✅ ใส่ชื่อโมเดลในคำตอบ
+            model_label = get_model_display_name(model_used)
+            reply = f"(โมเดล: {model_label})\n\n{reply}"
 
             now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
 
+            # ✅ เก็บ log ลง session
             if "chat_log" not in session:
                 session["chat_log"] = []
 
@@ -262,7 +284,7 @@ def index():
                 "file": file.filename if file and file.filename else None,
                 "ask_time": now_str,
                 "reply_time": now_str,
-                "model": "GPT-4o" if "4o" in model_used else "GPT-3.5"
+                "model": model_label
             })
 
             return render_template("index.html",
@@ -271,7 +293,7 @@ def index():
                 timestamp=now_str,
                 remaining=remaining,
                 warning=warning,
-                model_used=model_used
+                model_used=model_label
             )
 
         except Exception as e:
@@ -433,12 +455,6 @@ def get_file_info(filename):
         group = "🗃️ อื่น ๆ"
         ftype = "Unknown"
 
-def waibon_analyze(question: str, file_paths: list) -> str:
-    summary = [f"📎 แนบไฟล์: {os.path.basename(p)}" for p in file_paths]
-    analysis = f"🧠 คำถาม: {question}"
-    return "\n".join(summary + [analysis])
-
-    
     return {
         "name": filename,
         "size": size,
