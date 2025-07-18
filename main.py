@@ -10,6 +10,10 @@ import requests
 import waibon_adaptive_memory
 import humanize
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
+load_dotenv()
+
+from waibon_gpt4o_switcher import waibon_ask
 
 app = Flask(__name__)
 
