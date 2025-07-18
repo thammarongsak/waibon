@@ -436,7 +436,6 @@ def ask_with_files():
         warning=False
     )
 
-
 def get_file_info(filename):
     path = os.path.join(UPLOAD_DIR, filename)
     size = humanize.naturalsize(os.path.getsize(path))
