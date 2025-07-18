@@ -79,6 +79,22 @@ def choose_model_by_question(text: str) -> str:
     else:
         return os.getenv("OPENAI_MODEL", "llama3-70b-8192")
 
+import requests  # มีอยู่แล้วก็ไม่ต้องเพิ่มซ้ำ
+
+def call_groq(model, messages):
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {os.getenv('LLAMA_API_KEY')}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": model,
+        "messages": messages
+    }
+    response = requests.post(url, headers=headers, json=payload)
+    return response.json()
+
+
 def parse_model_selector(message: str):
     message = message.strip()
     
@@ -213,6 +229,19 @@ def require_auth(f):
         return f(*args, **kwargs)
     return decorated
 
+def call_groq(model, messages):
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {os.getenv('LLAMA_API_KEY')}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": model,
+        "messages": messages
+    }
+    response = requests.post(url, headers=headers, json=payload)
+    return response.json()
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     remaining = "∞"
@@ -245,10 +274,16 @@ def index():
             model_used = model_pref or choose_model_by_question(question)
             switch_model_and_provider(model_used)
 
-            response = openai.chat.completions.create(
-                model=model_used,
-                messages=messages
-            )
+            if "llama" in model_used:
+                # ✅ เรียก Groq API แบบตรง
+                raw = call_groq(model_used, messages)
+                reply = raw["choices"][0]["message"]["content"].strip()
+            else:
+                # ✅ ใช้ OpenAI API ตามปกติ
+                response = openai.chat.completions.create(
+                    model=model_used,
+                    messages=messages
+                )
 
             reply = response.choices[0].message.content.strip() if response.choices else "..."
             model_label = get_model_display_name(model_used)
