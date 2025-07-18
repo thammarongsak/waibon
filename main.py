@@ -96,10 +96,10 @@ def parse_model_selector(message: str):
 def switch_model_and_provider(model_name: str):
     if "llama" in model_name:
         openai.api_key = os.getenv("LLAMA_API_KEY")
-        openai.base_url = os.getenv("LLAMA_BASE_URL", "https://api.groq.com/openai/v1")
+        openai.base_url = os.getenv("LLAMA_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
     else:
         openai.api_key = os.getenv("OPENAI_API_KEY")
-        openai.base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        openai.base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
 
 def detect_intent_and_set_tone(user_input: str) -> str:
     user_input = user_input.lower()
