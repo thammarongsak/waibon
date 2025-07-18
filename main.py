@@ -60,13 +60,15 @@ def build_personality_message():
 def choose_model_by_question(text: str) -> str:
     lowered = text.lower()
 
-    # ✅ ถ้าพี่ระบุว่าอยากได้โมเดลไหน ก็ใช้ตามนั้น
-    if "@4o" in lowered:
+    # ✅ ถ้าพี่ระบุ @ อะไรมา ให้ใช้ตามนั้น
+    if "@llama" in lowered:
+        return "llama3-70b-8192"
+    elif "@4o" in lowered:
         return "gpt-4o"
     elif "@3.5" in lowered:
         return "gpt-3.5-turbo"
-    
-    # 🔄 ถ้าไม่ระบุเลย → ใช้ระบบวิเคราะห์อัตโนมัติเหมือนเดิม
+
+    # 🔍 วิเคราะห์คำถามเพื่อเลือกโมเดลอัตโนมัติ
     if any(word in lowered for word in [
         "วิเคราะห์", "เหตุผล", "เพราะอะไร", "เจตนา", 
         "อธิบาย", "เปรียบเทียบ", "ลึกซึ้ง", 
@@ -75,13 +77,16 @@ def choose_model_by_question(text: str) -> str:
         return "gpt-4o"
     elif len(lowered.split()) > 30:
         return "gpt-4o"
-    else:
-        return os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+
+    # ✅ ถ้าไม่เข้าเงื่อนไขใดเลย → ใช้ LLaMA เป็น default
+    return "llama3-70b-8192"
 
 def parse_model_selector(message: str):
     message = message.strip()
     
-    if message.startswith("@3.5"):
+    if message.startswith("@llama"):
+        return "llama3-70b-8192", message.replace("@llama", "", 1).strip()
+    elif message.startswith("@3.5"):
         return "gpt-3.5-turbo", message.replace("@3.5", "", 1).strip()
     elif message.startswith("@4o"):
         return "gpt-4o", message.replace("@4o", "", 1).strip()
@@ -89,6 +94,17 @@ def parse_model_selector(message: str):
         return "gpt-4", message.replace("@4", "", 1).strip()
     else:
         return None, message.strip()
+
+def switch_model_and_provider(model_name: str):
+    """
+    ปรับค่า openai.api_key และ base_url ตามโมเดลที่ใช้งาน
+    """
+    if "llama" in model_name:
+        openai.api_key = os.getenv("LLAMA_API_KEY")
+        openai.base_url = os.getenv("LLAMA_BASE_URL", "https://api.groq.com/openai/v1")
+    else:
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+        openai.base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 
 def detect_intent_and_set_tone(user_input: str) -> str:
     user_input = user_input.lower()
@@ -121,6 +137,18 @@ def sanitize_user_input(text):
         if word in text:
             return "ขอโทษครับพี่ คำนี้ไวบอนขอไม่ตอบนะครับ 🙏"
     return text
+
+def get_model_display_name(model_name: str) -> str:
+    if "llama" in model_name:
+        return "LLaMA 3"
+    elif "gpt-4o" in model_name:
+        return "GPT-4o"
+    elif "gpt-4" in model_name:
+        return "GPT-4"
+    elif "gpt-3.5" in model_name:
+        return "GPT-3.5"
+    else:
+        return model_name
 
 def clean_reply(text, tone="neutral", model_used="gpt-4o", mode="default"):
     original = text.strip().lower()
