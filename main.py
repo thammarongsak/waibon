@@ -6,6 +6,7 @@ from datetime import datetime
 from flask import Flask, render_template, request, session, send_file, redirect
 from datetime import datetime, timedelta
 import openai
+import requests 
 import waibon_adaptive_memory
 import humanize
 from werkzeug.utils import secure_filename
@@ -78,8 +79,6 @@ def choose_model_by_question(text: str) -> str:
         return "gpt-4o"
     else:
         return os.getenv("OPENAI_MODEL", "llama3-70b-8192")
-
-import requests  # มีอยู่แล้วก็ไม่ต้องเพิ่มซ้ำ
 
 def call_groq(model, messages):
     url = "https://api.groq.com/openai/v1/chat/completions"
