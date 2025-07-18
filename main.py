@@ -269,7 +269,7 @@ def index():
                 messages.append({"role": "assistant", "content": entry["answer"]})
         messages.append({"role": "user", "content": question})
 
-               try:
+        try:
             model_used = model_pref or choose_model_by_question(question)
             switch_model_and_provider(model_used)
 
