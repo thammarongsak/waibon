@@ -254,6 +254,33 @@ def index():
         question = request.form["question"]
         tone = "neutral"
 
+        # ✅ NEW: ถ้าขึ้นต้นด้วย @ ให้วิ่งไป waibon_ask()
+        if question.strip().startswith("@"):
+            from waibon_gpt4o_switcher import waibon_ask
+            reply = waibon_ask(question.strip())
+            now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
+
+            # ✅ บันทึกประวัติ
+            if "chat_log" not in session:
+                session["chat_log"] = []
+
+            session["chat_log"].append({
+                "question": question,
+                "answer": reply,
+                "ask_time": now_str,
+                "reply_time": now_str,
+                "model": "auto"  # หรือจะดึงจาก waibon_ask() ก็ได้ถ้าต้องการละเอียด
+            })
+
+            return render_template("index.html",
+                response=reply,
+                tone=tone,
+                timestamp=now_str,
+                remaining="∞",
+                warning=None,
+                model_used="auto"
+            )
+                
         if "@llama" in question:
             model_pref = "llama3-70b-8192"
         elif "@4o" in question:
