@@ -413,11 +413,15 @@ def ask_with_files():
     ]
 
     model_used = choose_model_by_question(combined_text)
+    switch_model_and_provider(model_used)  # ✅ เพิ่มบรรทัดนี้
+
     response = openai.chat.completions.create(
         model=model_used,
         messages=messages
     )
     answer_text = response.choices[0].message.content.strip() if response.choices else "น้องขอเวลาคิดแป๊บนึงนะครับพี่สอง 🤔"
+
+    model_label = get_model_display_name(model_used)  # ✅ เพิ่มตรงนี้
 
     if "chat_log" not in session:
         session["chat_log"] = []
@@ -430,7 +434,7 @@ def ask_with_files():
     return render_template("index.html",
         response=answer_text,
         tone="🎯 Files + Question",
-        model_used="gpt-4o",
+        model_used=model_label,  # ✅ ใช้ตรงนี้แทน
         timestamp=datetime.now().strftime("%H:%M:%S"),
         remaining='∞',
         warning=False
