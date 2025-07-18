@@ -229,87 +229,87 @@ def index():
     question = ""
     file = None
 
-    if request.method == "POST":
-        question = request.form["question"]
-        tone = "neutral"
+if request.method == "POST":
+    question = request.form["question"]
+    tone = "neutral"
 
-        # ✅ เลือกโมเดลตาม prefix
-        if "@llama" in question:
-            model_pref = "llama3-70b-8192"
-        elif "@4o" in question:
-            model_pref = "gpt-4o"
-        elif "@3.5" in question:
-            model_pref = "gpt-3.5-turbo"
-        else:
-            model_pref = None
+    # ✅ เลือกโมเดลตาม prefix
+    if "@llama" in question:
+        model_pref = "llama3-70b-8192"
+    elif "@4o" in question:
+        model_pref = "gpt-4o"
+    elif "@3.5" in question:
+        model_pref = "gpt-3.5-turbo"
+    else:
+        model_pref = None
 
-        # ✅ ล้าง prefix ออกจากคำถาม
-        question = question.replace("@llama", "").replace("@4o", "").replace("@3.5", "").strip()
-        file = request.files.get("file")
+    # ✅ ล้าง prefix ออกจากคำถาม
+    question = question.replace("@llama", "").replace("@4o", "").replace("@3.5", "").strip()
+    file = request.files.get("file")
 
-        # ✅ เตรียม messages
-        messages = [{"role": "system", "content": "คุณคือผู้ช่วยชื่อไวบอน"}]
-        if "chat_log" in session:
-            for entry in session["chat_log"]:
-                messages.append({"role": "user", "content": entry["question"]})
-                messages.append({"role": "assistant", "content": entry["answer"]})
-        messages.append({"role": "user", "content": question})
+    # ✅ เตรียม messages
+    messages = [{"role": "system", "content": "คุณคือผู้ช่วยชื่อไวบอน"}]
+    if "chat_log" in session:
+        for entry in session["chat_log"]:
+            messages.append({"role": "user", "content": entry["question"]})
+            messages.append({"role": "assistant", "content": entry["answer"]})
+    messages.append({"role": "user", "content": question})
 
-        try:
-            # ✅ เลือกโมเดลจริง
-            model_used = model_pref or choose_model_by_question(question)
-            switch_model_and_provider(model_used)
+    try:
+        # ✅ เลือกโมเดลจริง
+        model_used = model_pref or choose_model_by_question(question)
+        switch_model_and_provider(model_used)
 
-            # ✅ เรียก API
-            response = openai.chat.completions.create(
-                model=model_used,
-                messages=messages
-            )
+        # ✅ เรียก API
+        response = openai.chat.completions.create(
+            model=model_used,
+            messages=messages
+        )
 
-            reply = response.choices[0].message.content.strip() if response.choices else "..."
+        reply = response.choices[0].message.content.strip() if response.choices else "..."
 
-            # ✅ ใส่ชื่อโมเดลในคำตอบ
-            model_label = get_model_display_name(model_used)
-            reply = f"(โมเดล: {model_label})\n\n{reply}"
+        # ✅ ใส่ชื่อโมเดลในคำตอบ
+        model_label = get_model_display_name(model_used)
+        reply = f"(โมเดล: {model_label})\n\n{reply}"
 
-            now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
+        now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
 
-            # ✅ เก็บ log ลง session
-            if "chat_log" not in session:
-                session["chat_log"] = []
+        # ✅ เก็บ log ลง session
+        if "chat_log" not in session:
+            session["chat_log"] = []
 
-            session["chat_log"].append({
-                "question": question,
-                "answer": reply,
-                "file": file.filename if file and file.filename else None,
-                "ask_time": now_str,
-                "reply_time": now_str,
-                "model": model_label
-            })
+        session["chat_log"].append({
+            "question": question,
+            "answer": reply,
+            "file": file.filename if file and file.filename else None,
+            "ask_time": now_str,
+            "reply_time": now_str,
+            "model": model_label
+        })
 
-            return render_template("index.html",
-                response=reply,
-                tone=adjust_behavior(tone),
-                timestamp=now_str,
-                remaining=remaining,
-                warning=warning,
-                model_used=model_label
-            )
+        return render_template("index.html",
+            response=reply,
+            tone=adjust_behavior(tone),
+            timestamp=now_str,
+            remaining=remaining,
+            warning=warning,
+            model_used=model_label
+        )
 
-        except Exception as e:
-            print(f"เกิดข้อผิดพลาด: {e}")
-            response_text = "น้องเจอปัญหานิดหน่อยครับพี่ เดี๋ยวน้องจะลองใหม่ให้นะครับ"
-            tone_display = "⚠️ ERROR"
-            now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
+    except Exception as e:
+        print(f"เกิดข้อผิดพลาด: {e}")
+        response_text = "น้องเจอปัญหานิดหน่อยครับพี่ เดี๋ยวน้องจะลองใหม่ให้นะครับ"
+        tone_display = "⚠️ ERROR"
+        now_str = datetime.now().strftime("%d/%m/%y-%H:%M:%S")
 
-            return render_template("index.html",
-                response=response_text,
-                tone=tone_display,
-                timestamp=now_str,
-                remaining=remaining,
-                warning=True,
-                model_used="ERROR"
-            )
+        return render_template("index.html",
+            response=response_text,
+            tone=tone_display,
+            timestamp=now_str,
+            remaining=remaining,
+            warning=True,
+            model_used="ERROR"
+        )
 
     return render_template("index.html",
         response=response_text,
