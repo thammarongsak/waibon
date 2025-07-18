@@ -269,21 +269,22 @@ def index():
                 messages.append({"role": "assistant", "content": entry["answer"]})
         messages.append({"role": "user", "content": question})
 
-        try:
+               try:
             model_used = model_pref or choose_model_by_question(question)
             switch_model_and_provider(model_used)
 
-        if "llama" in model_used:
-            response_json = call_groq(model_used, messages)
-            reply = response_json["choices"][0]["message"]["content"].strip()
-            model_label = get_model_display_name(model_used)
-        else:
-            response = openai.chat.completions.create(
-                model=model_used,
-                messages=messages
-            )
+            if "llama" in model_used:
+                # ใช้ Groq API โดยตรง
+                response_json = call_groq(model_used, messages)
+                reply = response_json["choices"][0]["message"]["content"].strip()
+            else:
+                # ใช้ OpenAI API ปกติ
+                response = openai.chat.completions.create(
+                    model=model_used,
+                    messages=messages
+                )
+                reply = response.choices[0].message.content.strip() if response.choices else "..."
 
-            reply = response.choices[0].message.content.strip() if response.choices else "..."
             model_label = get_model_display_name(model_used)
             reply = f"(โมเดล: {model_label})\n\n{reply}"
 
@@ -312,6 +313,7 @@ def index():
 
         except Exception as e:
             return f"❌ ERROR: {str(e)}"
+
 
     return render_template("index.html",
         tone="neutral",
