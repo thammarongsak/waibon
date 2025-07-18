@@ -273,16 +273,15 @@ def index():
             model_used = model_pref or choose_model_by_question(question)
             switch_model_and_provider(model_used)
 
-            if "llama" in model_used:
-                # ✅ เรียก Groq API แบบตรง
-                raw = call_groq(model_used, messages)
-                reply = raw["choices"][0]["message"]["content"].strip()
-            else:
-                # ✅ ใช้ OpenAI API ตามปกติ
-                response = openai.chat.completions.create(
-                    model=model_used,
-                    messages=messages
-                )
+        if "llama" in model_used:
+            response_json = call_groq(model_used, messages)
+            reply = response_json["choices"][0]["message"]["content"].strip()
+            model_label = get_model_display_name(model_used)
+        else:
+            response = openai.chat.completions.create(
+                model=model_used,
+                messages=messages
+            )
 
             reply = response.choices[0].message.content.strip() if response.choices else "..."
             model_label = get_model_display_name(model_used)
