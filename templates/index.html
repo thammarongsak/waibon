@@ -1,79 +1,49 @@
 <!doctype html>
 <html lang="th">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Waibon Safe Room</title>
-  <link rel="stylesheet" href="/static/style.css"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Waibon • Projects</title>
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <div class="app">
-    <!-- Sidebar: โปรเจ็กต์/ไฟล์งาน -->
-    <aside class="sidebar">
-      <div class="sb-top">
-        <div class="brand">ไวบอน • Projects</div>
-        <button id="newProject" class="btn btn-primary small">＋ โปรเจ็กต์ใหม่</button>
-      </div>
-      <ul id="projectList" class="project-list">
-        <!-- รายการโปรเจ็กต์ (mock) -->
-      </ul>
-    </aside>
+  <aside class="sidenav">
+    <div class="brand">ไวบอน • Projects</div>
+    <button class="btn primary" id="newProjectBtn">+ โปรเจ็กต์ใหม่</button>
+    <div class="navlist">
+      <div class="navitem active">default</div>
+      <div class="navitem">demo-1</div>
+      <div class="navitem">ข่าวงาน</div>
+    </div>
+  </aside>
 
-    <!-- Main: ห้องแชท -->
-    <main class="main">
-      <!-- Toolbar ด้านบน -->
+  <main class="main">
+    <header class="topbar">
+      <div class="row">
+        <label>เอเจนต์</label>
+        <select id="agentSelect"></select>
+        <button class="btn ghost" id="saveAsProfile">บันทึกเป็นโปรไฟล์</button>
+        <button class="btn ghost" id="clearScreen">เคลียร์หน้าจอ</button>
+        <span class="spacer"></span>
+        <span class="status" id="statusDot">●</span>
+      </div>
+    </header>
+
+    <section class="chat" id="chat"></section>
+
+    <footer class="composer">
       <div class="toolbar">
-        <div class="left">
-          <button id="saveProject" class="btn">💾 บันทึกเป็นโปรเจ็กต์</button>
-          <button id="clearView" class="btn">🧹 เคลียร์หน้าจอ</button>
-        </div>
-        <div class="right">
-          <select id="agentPicker" class="pick">
-            <option value="waibon">Waibon (หลัก)</option>
-            <option value="llama">Llama (Groq)</option>
-            <option value="ollama">Ollama (โลคัล)</option>
-          </select>
-          <button id="addAgent" class="btn">👥 เพิ่มเอเจนต์</button>
-        </div>
+        <button class="btn" id="attachBtn">แนบไฟล์</button>
+        <button class="btn" id="sttBtn" title="พูด→ข้อความ (ถัดไป)">พูด→ข้อความ</button>
+        <button class="btn" id="pttBtn" title="กดคุย (PTT) (ถัดไป)">กดคุย (PTT)</button>
       </div>
-
-      <!-- ไทม์ไลน์แชท -->
-      <div id="chat" class="chat">
-        <!-- ตัวอย่างบับเบิล (mock) -->
-        <div class="bubble me">
-          <div class="meta"><span class="name">พ่อ</span><span class="timestamp"></span></div>
-          <div class="text">เริ่มทดสอบหน้าจอใหม่</div>
-        </div>
-        <div class="bubble bot">
-          <div class="meta"><span class="name">Waibon</span><span class="timestamp"></span></div>
-          <div class="text">รับทราบครับพ่อ — รุ่น mockup พร้อมใช้งาน</div>
-        </div>
+      <div class="inputrow">
+        <textarea id="input" rows="2" placeholder="พิมพ์พร้อมคอมที่นี่…"></textarea>
+        <button class="btn primary" id="sendBtn">ส่ง ▸</button>
       </div>
-
-      <!-- แถบใส่ข้อความ/ปุ่ม -->
-      <div class="composer">
-        <div class="left-tools">
-          <label class="btn">
-            📎 แนบไฟล์
-            <input id="attach" type="file" hidden multiple/>
-          </label>
-          <button id="micDict" class="btn">🎙️ พูด→ข้อความ</button>
-          <button id="micPTT" class="btn">🎤 กดคุย (PTT)</button>
-        </div>
-
-        <textarea id="input" placeholder="พิมพ์ข้อความที่นี่…"></textarea>
-
-        <div class="right-tools">
-          <button id="send" class="btn btn-primary">ส่ง ▶</button>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <!-- Speaking indicator -->
-  <div id="speaking" class="speaking hidden">
-    <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-  </div>
+    </footer>
+  </main>
 
   <script src="/static/chat.js"></script>
 </body>
