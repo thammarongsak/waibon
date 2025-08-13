@@ -14,7 +14,7 @@
       "name": "Llama (Groq)",
       "provider": "groq",
       "model": "llama3-70b-8192",
-      "base_url": "https://api.groq.com/openai",
+      "base_url": "https://api.groq.com/openai/v1",
       "env_key": "LLAMA_API_KEY"
     }
   ]
