@@ -2,6 +2,11 @@
 import os, json, time, uuid, requests
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
+from agent_router import load_agents, call_agent
+
+AGENTS_CFG = os.path.join(MEMORY_DIR, "agents", "agents.json")
+os.makedirs(os.path.dirname(AGENTS_CFG), exist_ok=True)
+AGENTS, DEFAULT_AGENT_ID = load_agents(AGENTS_CFG)
 
 # =================== CONFIG ===================
 OPENAI_API_KEY  = os.getenv("OPENAI_API_KEY", "")
