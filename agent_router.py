@@ -1,23 +1,32 @@
 # -*- coding: utf-8 -*-
 import os, json, re
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Optional
 
-# ---------- allow comments & trailing commas in agents.json ----------
-def _strip_comments(text: str) -> str:
+# ---------- JSON utilities (allow comments & trailing commas) ----------
+def _strip_json(text: str) -> str:
     text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)      # /* ... */
     text = re.sub(r"^\s*//.*?$", "", text, flags=re.M)     # // ...
     text = re.sub(r",\s*([}\]])", r"\1", text)             # trailing commas
     return text
 
+def _ensure_v1(url: Optional[str]) -> Optional[str]:
+    if not url:
+        return url
+    u = url.rstrip("/")
+    if not u.endswith("/v1"):
+        u = u + "/v1"
+    return u
+
+# ---------- Load agents (GPT-5 only) ----------
 def load_agents(path: str) -> Tuple[Dict[str, Any], str]:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     if not os.path.exists(path):
         sample = {
-            "default_agent": "waibon_gpt",
+            "default_agent": "waibon_gpt5",
             "agents": [
                 {
-                    "id": "waibon_gpt",
-                    "name": "Waibon (GPT)",
+                    "id": "waibon_gpt5",
+                    "name": "Waibon (GPT‑5)",
                     "provider": "openai",
                     "model": "gpt-5",
                     "base_url": "https://api.openai.com/v1",
@@ -29,8 +38,7 @@ def load_agents(path: str) -> Tuple[Dict[str, Any], str]:
             json.dump(sample, f, ensure_ascii=False, indent=2)
 
     raw = open(path, "r", encoding="utf-8").read()
-    raw = _strip_comments(raw)
-    data = json.loads(raw)
+    data = json.loads(_strip_json(raw))
 
     agents: Dict[str, Any] = {}
     default_id = data.get("default_agent") or data.get("default") or ""
@@ -38,6 +46,9 @@ def load_agents(path: str) -> Tuple[Dict[str, Any], str]:
         aid = item.get("id")
         if not aid:
             raise ValueError("Agent missing 'id'")
+        # normalize base_url for safety
+        if item.get("base_url"):
+            item["base_url"] = _ensure_v1(item["base_url"])
         agents[aid] = item
 
     if not default_id and agents:
@@ -46,7 +57,7 @@ def load_agents(path: str) -> Tuple[Dict[str, Any], str]:
         default_id = next(iter(agents.keys()))
     return agents, default_id
 
-# ---------- helpers ----------
+# ---------- Prompt building (system+history+user -> single input string) ----------
 def _messages_to_prompt(messages: List[Dict[str, str]]) -> str:
     lines = []
     for m in messages:
@@ -56,103 +67,51 @@ def _messages_to_prompt(messages: List[Dict[str, str]]) -> str:
         lines.append(f"{prefix} {text}")
     return "\n".join(lines) + "\nAssistant:"
 
-def _messages_for_chat(messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
-    out = []
-    for m in messages:
-        role = m.get("role", "user")
-        content = m.get("content", "")
-        if role not in ("system", "user", "assistant"):
-            role = "user"
-        out.append({"role": role, "content": content})
-    return out
+def _is_gpt5(model: str) -> bool:
+    return model.lower().startswith("gpt-5")
 
-# ---------- main call ----------
+# ---------- Single-path caller: Responses API (GPT‑5 only) ----------
 def call_agent(
     agent: Dict[str, Any],
     messages: List[Dict[str, str]],
-    temperature: float = 0.6,
+    temperature: float = 1.0,     # ignored for GPT‑5
     max_tokens: int = 1024,
-    stream: bool = False
+    stream: bool = False          # not used in this step
 ):
     """
-    รองรับทั้ง:
-    - OpenAI SDK รุ่นใหม่ (client.responses.create)
-    - OpenAI SDK รุ่นเก่า (client.chat.completions.create)
-    - Groq (ผ่าน base_url แบบ OpenAI-compatible)
+    GPT‑5 only, using Responses API.
+    - Uses `max_completion_tokens`
+    - Does NOT send `temperature` for GPT‑5 (default=1 only)
     """
-    provider = agent.get("provider", "openai")
-    model    = agent.get("model", "gpt-5")
-    base_url = agent.get("base_url") or (
-        os.getenv("OPENAI_BASE_URL") if provider == "openai" else os.getenv("LLAMA_BASE_URL")
-    )
-    env_key  = agent.get("env_key", "OPENAI_API_KEY" if provider == "openai" else "LLAMA_API_KEY")
-    api_key  = os.getenv(env_key, "")
-
-    # ใช้ SDK เดียว (openai>=1.x) ทั้ง OpenAI/Groq
     from openai import OpenAI
+
+    model    = agent.get("model", "gpt-5")
+    base_url = _ensure_v1(agent.get("base_url") or os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"))
+    api_key  = (os.getenv(agent.get("env_key", "OPENAI_API_KEY"), "") or "").strip()
+
     client = OpenAI(api_key=api_key, base_url=base_url)
+    kwargs = {
+        "model": model,
+        "input": _messages_to_prompt(messages),
+        "max_completion_tokens": max_tokens
+    }
+    if not _is_gpt5(model):
+        # (เผื่ออนาคตอยากเพิ่ม agent อื่น) — GPT‑5 ห้ามส่ง temperature
+        kwargs["temperature"] = temperature
 
-    # 1) พยายามใช้ Responses API ก่อน (ใหม่)
     try:
-        # ถ้า SDK ไม่มี attribute นี้จะเกิด AttributeError
-        _ = client.responses
-        rsp = client.responses.create(
-            model=model,
-            input=_messages_to_prompt(messages),
-            temperature=temperature,
-            max_completion_tokens=max_tokens,
-        )
-
-        # openai 1.55+ มี property นี้
+        rsp = client.responses.create(**kwargs)
         text = getattr(rsp, "output_text", None)
         if text is None:
-            # เผื่อบางรุ่น/ปลั๊กอินที่ไม่มี output_text
-            # พยายามดึงจาก content[]
-            text_parts = []
-            for part in getattr(rsp, "content", []) or []:
-                # บางกรณี part.type == "output_text" และมี field .text
-                t = getattr(part, "text", None)
+            parts = []
+            for c in getattr(rsp, "content", []) or []:
+                t = getattr(c, "text", None)
                 if t:
-                    text_parts.append(t)
-            text = "".join(text_parts)
-
+                    parts.append(t)
+            text = "".join(parts)
         usage = getattr(rsp, "usage", {}) or {}
-        return text or "", dict(usage)
-
-    except AttributeError:
-        # ไม่มี .responses ใน SDK -> ไปใช้ chat.completions
-        pass
+        return (text or "").strip(), dict(usage)
     except Exception as e:
-        # ถ้า responses.create มีปัญหาอื่น ๆ ลอง chat.completions ต่อ
-        try:
-            msgs = _messages_for_chat(messages)
-            rsp = client.chat.completions.create(
-                model=model,
-                messages=msgs,
-                temperature=temperature,
-                max_completion_tokens=max_tokens,
-            )
-            choice = rsp.choices[0] if rsp and getattr(rsp, "choices", None) else None
-            text = (choice.message.content if choice and getattr(choice, "message", None) else "") or ""
-            usage = getattr(rsp, "usage", {}) or {}
-            return text, dict(usage)
-        except Exception as e2:
-            last_user = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
-            return f"[{agent.get('name','agent')}] (fallback) {last_user}\n\nรายละเอียดข้อผิดพลาด: {e2}", {}
-
-    # 2) เส้นทาง SDK เก่า (ไม่มี .responses)
-    try:
-        msgs = _messages_for_chat(messages)
-        rsp = client.chat.completions.create(
-            model=model,
-            messages=msgs,
-            temperature=temperature,
-            max_completion_tokens=max_tokens,
-        )
-        choice = rsp.choices[0] if rsp and getattr(rsp, "choices", None) else None
-        text = (choice.message.content if choice and getattr(choice, "message", None) else "") or ""
-        usage = getattr(rsp, "usage", {}) or {}
-        return text, dict(usage)
-    except Exception as e:
+        # do not crash the app — return an explanatory message
         last_user = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
-        return f"[{agent.get('name','agent')}] (fallback) {last_user}\n\nรายละเอียดข้อผิดพลาด: {e}", {}
+        return f"[{agent.get('name','agent')}] (error) {last_user}\n\nรายละเอียดข้อผิดพลาด: {e}", {}
