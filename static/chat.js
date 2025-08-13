@@ -39,25 +39,40 @@ function addBubble({who, name, text}) {
   chatEl.scrollTop = chatEl.scrollHeight;  // เลื่อนขึ้นด้านบนแบบ GPT (คงท้ายหน้าจอ)
 }
 
-// ส่งข้อความ (mock)
-function sendMessage() {
+async function sendMessage() {
   const msg = inputEl.value.trim();
   if (!msg) return;
-  addBubble({who:"user", name:"พ่อ", text: msg});
-  inputEl.value = "";
-  inputEl.focus(); // เคอร์เซอร์กลับช่องพิมพ์ทันที
 
-  // แสดง "ลูกกำลังพิมพ์/พูด"
+  // เพิ่มบับเบิลฝั่งพ่อ (ซ้าย/ขวาตาม theme ปัจจุบัน)
+  addBubble({ who: "user", name: "พ่อ", text: msg });
+
+  // เคลียร์กล่องและโฟกัสกลับทันที
+  inputEl.value = "";
+  inputEl.focus();
+
+  // แสดงกำลังประมวลผล (คลื่น)
   speaking.classList.remove("hidden");
 
-  // จำลองคำตอบลูก (ภายหลังจะเรียก /api/chat)
-  setTimeout(() => {
-    const agentName = agentPicker.value === "waibon" ? "Waibon" :
-                      agentPicker.value === "llama" ? "Llama" : "Ollama";
-    addBubble({who:"bot", name: agentName, text: "นี่คือคำตอบจำลอง (เดี๋ยวผูก API จริงในก้าวโค้ด)"});
+  try {
+    const r = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: msg,
+        history: []  // ระยะแรกยังไม่ส่งยาว (กันรก) — ค่อยเพิ่มทีหลัง
+      })
+    });
+    const data = await r.json();
+    const answer = data.text || "(ไม่มีคำตอบ)";
+    // ใส่ชื่อเอเจนต์เริ่มต้นเป็น Waibon (หลายเอเจนต์จะทำในก้าวถัดไป)
+    addBubble({ who: "bot", name: "Waibon", text: answer });
+  } catch (e) {
+    addBubble({ who: "bot", name: "Waibon", text: "เรียก /api/chat ไม่สำเร็จ" });
+  } finally {
     speaking.classList.add("hidden");
-  }, 800);
+  }
 }
+
 
 // ปุ่มส่ง & Enter
 sendBtn.onclick = sendMessage;
