@@ -30,8 +30,8 @@ body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto;background:v
 .bubble .timestamp{font-size:10px;color:var(--muted)} /* เล็กที่สุดเท่าที่อ่านได้ */
 .bubble .text{white-space:pre-wrap;line-height:1.55}
 
-.me{align-self:flex-start;background:var(--user)}   /* พ่อ = ซ้าย */
-.bot{align-self:flex-end;background:var(--bot)}     /* ลูก/เอเจนต์ = ขวา */
+.me{align-self:flex-end;background:var(--user)}   /* พ่อ = ซ้าย */
+.bot{align-self:flex-start;background:var(--bot)}     /* ลูก/เอเจนต์ = ขวา */
 
 .composer{display:grid;grid-template-columns:auto 1fr auto;gap:8px;padding:10px;border-top:1px solid var(--line);background:var(--panel)}
 textarea#input{width:100%;min-height:64px;max-height:160px;resize:vertical;padding:12px;border-radius:12px;border:1px solid var(--line);outline:none}
