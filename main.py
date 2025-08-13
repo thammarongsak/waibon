@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Waibon (Step 1): Text chat + agent switch (OpenAI/Groq) — single, stable bundle.
+Waibon • Step 1: Text chat + agent switch (OpenAI/Groq), stable & cache-safe.
 """
 
 import os, json, time, uuid, logging
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, List
 from flask import Flask, request, jsonify, make_response, render_template
 from flask_cors import CORS
 
@@ -18,16 +18,15 @@ app = Flask(__name__, static_url_path="/static", static_folder="static", templat
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 logging.basicConfig(
-try:
-    import openai as _openai
-    app.logger.info("OpenAI SDK version = %s", getattr(_openai, "__version__", "unknown"))
-except Exception:
-    app.logger.warning("OpenAI SDK not importable at boot")
-
     level=logging.DEBUG if DEBUG else logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
-app.logger.info("Waibon backend booting (DEBUG=%s)", DEBUG)
+# log เวอร์ชัน SDK (ถ้ามี)
+try:
+    import openai as _openai
+    app.logger.info("OpenAI SDK version = %s", getattr(_openai, "__version__", "unknown"))
+except Exception as _e:
+    app.logger.warning("OpenAI SDK not importable at boot: %s", _e)
 
 # ---------------- Memory & Paths -------------
 BASE_DIR   = os.path.dirname(__file__)
@@ -51,19 +50,19 @@ def append_log(session_id: str, role: str, text: str, meta: Dict[str, Any] | Non
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
 # ---------------- Agent Router ----------------
-from agent_router import load_agents, call_agent  # same-dir file
+from agent_router import load_agents, call_agent
 
 AGENTS_CFG = os.path.join(AGENTS_DIR, "agents.json")
 try:
     AGENTS, DEFAULT_AGENT_ID = load_agents(AGENTS_CFG)
 except Exception as e:
-    app.logger.error("Failed to load agents.json: %s -> fallback 'echo'", e)
+    app.logger.error("Failed to load agents.json: %s -> fallback to 'echo'", e)
     AGENTS = {"echo": {"id":"echo","name":"Echo Agent","provider":"local","model":"echo"}}
     DEFAULT_AGENT_ID = "echo"
 
 SYSTEM_STYLE = (
-    "คุณคือไวบอน ผู้ช่วยของ 'พ่อ' พูดไทยชัด ตรงประเด็น ทำงานทีละก้าว "
-    "สรุปสั้นก่อนทำ ต่อไปนี้ตอบแบบกระชับและชัดเจน"
+    "คุณคือไวบอน ผู้ช่วยของ 'พ่อ' ตอบไทยชัด ตรงประเด็น ทำงานทีละก้าว "
+    "สรุปสั้นก่อนทำ และรอยืนยันก่อนขยับขั้นต่อไป"
 )
 
 # ---------------- Routes ----------------------
@@ -110,11 +109,14 @@ def api_chat():
     try:
         reply, usage = call_agent(agent, msgs, temperature=0.6, max_tokens=1024, stream=False)
     except Exception as e:
-        reply, usage = f"ขออภัย เกิดข้อผิดพลาดของเอเจนต์: {e}", {}
+        reply, usage = f"ขออภัย เอเจนต์ผิดพลาด: {e}", {}
 
     append_log(sid, "assistant", reply, meta={"agent": agent.get("id"), "model": agent.get("model"), "usage": usage})
 
-    resp.response = json.dumps({"ok": True, "text": reply, "agent": {"id": agent.get("id"), "name": agent.get("name")}}, ensure_ascii=False)
+    resp.response = json.dumps(
+        {"ok": True, "text": reply, "agent": {"id": agent.get("id"), "name": agent.get("name")}},
+        ensure_ascii=False
+    )
     resp.mimetype = "application/json"
     return resp, 200
 
