@@ -13,20 +13,17 @@
     <button class="btn primary" id="newProjectBtn">+ โปรเจ็กต์ใหม่</button>
     <div class="navlist">
       <div class="navitem active">default</div>
-      <div class="navitem">demo-1</div>
-      <div class="navitem">ข่าวงาน</div>
     </div>
   </aside>
 
   <main class="main">
     <header class="topbar">
       <div class="row">
-        <label>เอเจนต์</label>
-        <select id="agentSelect"></select>
-        <button class="btn ghost" id="saveAsProfile">บันทึกเป็นโปรไฟล์</button>
-        <button class="btn ghost" id="clearScreen">เคลียร์หน้าจอ</button>
-        <span class="spacer"></span>
+        <label class="muted">สถานะ</label>
         <span class="status" id="statusDot">●</span>
+        <span id="statusText" class="muted">พร้อม</span>
+        <span class="spacer"></span>
+        <button class="btn ghost" id="clearScreen">เคลียร์หน้าจอ</button>
       </div>
     </header>
 
@@ -34,9 +31,9 @@
 
     <footer class="composer">
       <div class="toolbar">
-        <button class="btn" id="attachBtn">แนบไฟล์</button>
+        <!-- ปุ่มฟีเจอร์อนาคต (คง pattern เดิมไว้) -->
         <button class="btn" id="sttBtn" title="พูด→ข้อความ (ถัดไป)">พูด→ข้อความ</button>
-        <button class="btn" id="pttBtn" title="กดคุย (PTT) (ถัดไป)">กดคุย (PTT)</button>
+        <button class="btn" id="pttBtn" title="กดคุย (ถัดไป)">กดคุย</button>
       </div>
       <div class="inputrow">
         <textarea id="input" rows="2" placeholder="พิมพ์พร้อมคอมที่นี่…"></textarea>
