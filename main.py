@@ -83,10 +83,26 @@ def index():
 
 @app.route("/api/chat", methods=["POST"])
 def api_chat():
-    """
-    รับข้อความจากพ่อ -> เรียก OpenAI -> ตอบข้อความ
-    บันทึกทั้งฝั่ง user/assistant ลง daily_memory.jsonl
-    """
+agent_id = (data.get("agent_id") or DEFAULT_AGENT_ID)
+agent = AGENTS.get(agent_id, AGENTS[DEFAULT_AGENT_ID])
+
+messages = [{"role":"system","content": SYSTEM_STYLE}] + history[-10:]
+messages.append({"role":"user","content": user_text})
+
+try:
+    text, usage = call_agent(agent, messages, temperature=0.6, max_tokens=1024, stream=False)
+except Exception as e:
+    text, usage = f"ขออภัย เรียกเอเจนต์ล้มเหลว: {e}", {}
+
+append_log(sid, "assistant", text, meta={
+    "agent_id": agent_id, "agent_name": agent["name"], "model": agent["model"], "usage": usage
+})
+
+resp.response = json.dumps({"text": text, "agent": {"id": agent_id, "name": agent["name"]}}, ensure_ascii=False)
+resp.mimetype = "application/json"
+return resp
+
+    
     data = request.get_json(force=True)
     user_text = (data.get("message") or "").strip()
     history   = data.get("history", [])  # [{role, content}, ...] (optional)
