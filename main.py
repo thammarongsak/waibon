@@ -1,13 +1,12 @@
-# main.py — ก้าวที่ 3: เปิดแชทข้อความจริง (ยังไม่ใส่เสียง/หลายเอเจนต์)
-import os, json, time, uuid, requests
-from flask import Flask, request, jsonify, make_response
+# main.py — ก้าว 3: แชทข้อความจริง + เลือกเอเจนต์ (GPT/Llama) ผ่าน Router กลาง
+import os, json, time, uuid
+from flask import Flask, request, jsonify, make_response, render_template
 from flask_cors import CORS
 from agent_router import load_agents, call_agent
 
 # =================== CONFIG ===================
-OPENAI_API_KEY  = os.getenv("OPENAI_API_KEY", "")
-OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-OPENAI_MODEL    = os.getenv("OPENAI_MODEL", "gpt-4o")  # เปลี่ยนเป็น gpt-5 ได้ถ้าพ่อมีสิทธิ์
+OPENAI_MODEL    = os.getenv("OPENAI_MODEL", "gpt-4o")   # เปลี่ยนเป็น gpt-5 ได้ถ้าพ่อมีสิทธิ์
+PORT            = int(os.environ.get("PORT", 10000))
 
 # =================== APP ======================
 app = Flask(
@@ -136,4 +135,3 @@ def api_chat():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
-
