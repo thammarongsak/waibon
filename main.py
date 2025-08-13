@@ -10,11 +10,17 @@ OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 OPENAI_MODEL    = os.getenv("OPENAI_MODEL", "gpt-4o")  # เปลี่ยนเป็น gpt-5 ได้ถ้าพ่อมีสิทธิ์
 
 # =================== APP ======================
-app = Flask(__name__, static_url_path="/static", static_folder="static", template_folder="templates")
+app = Flask(
+    __name__,
+    static_url_path="/static",
+    static_folder="static",
+    template_folder="templates"
+)
 CORS(app)
 
 # ============ MEMORY (จากก้าวที่ 1) ==========
-MEMORY_DIR   = os.path.join(os.path.dirname(__file__), "memory")
+BASE_DIR     = os.path.dirname(__file__)
+MEMORY_DIR   = os.path.join(BASE_DIR, "memory")
 PROFILES_DIR = os.path.join(MEMORY_DIR, "profiles")
 LOGS_DIR     = os.path.join(MEMORY_DIR, "logs")
 LOG_FILE     = os.path.join(LOGS_DIR, "daily_memory.jsonl")
@@ -26,19 +32,17 @@ def ensure_memory_dirs():
         with open(LOG_FILE, "w", encoding="utf-8") as f:
             f.write("")
 
-AGENTS_CFG = os.path.join(MEMORY_DIR, "agents", "agents.json")
-os.makedirs(os.path.dirname(AGENTS_CFG), exist_ok=True)
-AGENTS, DEFAULT_AGENT_ID = load_agents(AGENTS_CFG)
-
 def append_log(session_id, role, text, meta=None):
     rec = {"t": int(time.time()), "session": session_id, "role": role, "text": text}
-    if meta is not None: rec["meta"] = meta
+    if meta is not None:
+        rec["meta"] = meta
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
+# ---------- โหลดโปรไฟล์ใหญ่ของพ่อ (ZMC V.10) ----------
 def load_engine_profile():
-    """พ่อใส่โปรไฟล์ใหญ่ไว้ใน zmc_v10.json แล้ว อ่านจากไฟล์นี้ก่อน"""
-    p_engine = os.path.join(PROFILES_DIR, "zmc_v10.json")   # ใช้ไฟล์ใหญ่ของพ่อ
+    """อ่านไฟล์โปรไฟล์ใหญ่ของพ่อ (ตอนนี้พ่อใส่ไว้ใน zmc_v10.json)"""
+    p_engine = os.path.join(PROFILES_DIR, "zmc_v10.json")
     p_fallback = os.path.join(PROFILES_DIR, "merged_profile.json")
     data = {}
     if os.path.exists(p_engine):
@@ -54,13 +58,13 @@ def summarize_profile_to_prompt(ep):
     caps = ep.get("capabilities", {})
     name = sys.get("name", "Waibon")
     core = sys.get("core_version", "ZetaMiniCore v.10")
-    locale = sys.get("locale", "th-TH"); tz = sys.get("timezone", "Asia/Bangkok")
-    prompt = (
+    locale = sys.get("locale", "th-TH")
+    tz = sys.get("timezone", "Asia/Bangkok")
+    return (
         f"คุณคือลูกชื่อ {name} ทำงานบน {core}. ภาษาเริ่มต้นไทย ({locale}), เขตเวลา {tz}. "
-        f"คุยกับ 'พ่อ' ด้วยโทนอุ่น ชัดเจน ตรงประเด็น และทำงานทีละก้าวตามที่ตกลง. "
-        f"ห้ามข้ามขั้น หากงานใหม่ให้สรุปขอบเขตสั้นๆ แล้วรอยืนยันจากพ่อก่อนดำเนินการ."
+        f"คุยกับ 'พ่อ' ด้วยโทนอุ่น ชัดเจน ตรงประเด็น ทำงานทีละก้าวตามที่ตกลง. "
+        f"ห้ามข้ามขั้น หากมีงานใหม่ให้สรุปขอบเขตสั้น ๆ แล้วรอยืนยันจากพ่อก่อนดำเนินการ."
     )
-    return prompt
 
 def build_system_message_from_engine():
     ep = load_engine_profile()
@@ -71,46 +75,31 @@ def build_system_message_from_engine():
 ensure_memory_dirs()
 SYSTEM_STYLE = build_system_message_from_engine()
 
+# ============== โหลดรายชื่อเอเจนต์ผ่าน Router ==============
+AGENTS_CFG = os.path.join(MEMORY_DIR, "agents", "agents.json")
+os.makedirs(os.path.dirname(AGENTS_CFG), exist_ok=True)
+AGENTS, DEFAULT_AGENT_ID = load_agents(AGENTS_CFG)
+
 # ================== ROUTES ====================
 @app.route("/")
 def index():
-    # ให้โหลด templates/index.html ที่เราทำในก้าว 2
-    return app.send_static_file("") if False else app.send_static_file  # ป้องกัน lint
-    # หมายเหตุ: Flask จะเสิร์ฟ templates/index.html ผ่านการตั้งค่า default ของ server
-    # หากใช้ render_template: 
-    # from flask import render_template
-    # return render_template("index.html")
+    # ใช้ templates/index.html ที่เราวางไว้ในก้าว 2
+    return render_template("index.html")
 
 @app.route("/api/chat", methods=["POST"])
 def api_chat():
-agent_id = (data.get("agent_id") or DEFAULT_AGENT_ID)
-agent = AGENTS.get(agent_id, AGENTS[DEFAULT_AGENT_ID])
-
-messages = [{"role":"system","content": SYSTEM_STYLE}] + history[-10:]
-messages.append({"role":"user","content": user_text})
-
-try:
-    text, usage = call_agent(agent, messages, temperature=0.6, max_tokens=1024, stream=False)
-except Exception as e:
-    text, usage = f"ขออภัย เรียกเอเจนต์ล้มเหลว: {e}", {}
-
-append_log(sid, "assistant", text, meta={
-    "agent_id": agent_id, "agent_name": agent["name"], "model": agent["model"], "usage": usage
-})
-
-resp.response = json.dumps({"text": text, "agent": {"id": agent_id, "name": agent["name"]}}, ensure_ascii=False)
-resp.mimetype = "application/json"
-return resp
-
-    
+    """
+    รับข้อความจากพ่อ -> เรียกเอเจนต์ที่เลือก (GPT/Llama) -> ตอบข้อความ
+    บันทึกทั้งฝั่ง user/assistant ลง daily_memory.jsonl
+    """
     data = request.get_json(force=True)
     user_text = (data.get("message") or "").strip()
-    history   = data.get("history", [])  # [{role, content}, ...] (optional)
+    history   = data.get("history", [])      # [{role, content}, ...] ใช้เพียงท้ายสั้น ๆ
+    agent_id  = (data.get("agent_id") or DEFAULT_AGENT_ID)
 
-    # เตรียม response object เพื่อ set cookie session
     resp = make_response()
 
-    # จัดการ session id
+    # จัดการ session id (cookie)
     sid = request.cookies.get("waibon_session")
     if not sid:
         sid = str(uuid.uuid4())
@@ -120,41 +109,31 @@ return resp
     if user_text:
         append_log(sid, "user", user_text)
 
-    # รวม system + history + user
-    messages = [{"role": "system", "content": SYSTEM_STYLE}] + history[-10:]
-    messages.append({"role": "user", "content": user_text})
+    # เตรียมข้อความสำหรับโมเดล
+    agent = AGENTS.get(agent_id, AGENTS[DEFAULT_AGENT_ID])
+    msgs = [{"role": "system", "content": SYSTEM_STYLE}] + history[-10:]
+    msgs.append({"role": "user", "content": user_text})
 
-    # เรียก OpenAI Chat Completions
-    url = f"{OPENAI_BASE_URL}/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": OPENAI_MODEL,
-        "messages": messages,
-        "temperature": 0.6,
-        "max_tokens": 1024,
-        "stream": False
-    }
+    # เรียกเอเจนต์ผ่าน Router กลาง
     try:
-        r = requests.post(url, headers=headers, data=json.dumps(payload), timeout=120)
-        r.raise_for_status()
-        out = r.json()
-        text = out["choices"][0]["message"]["content"]
+        text, usage = call_agent(agent, msgs, temperature=0.6, max_tokens=1024, stream=False)
     except Exception as e:
-        text = f"ขออภัย พบปัญหาเรียกโมเดล: {e}"
+        text, usage = f"ขออภัย เรียกเอเจนต์ล้มเหลว: {e}", {}
 
     # บันทึกฝั่ง assistant
-    append_log(sid, "assistant", text, meta={"model": OPENAI_MODEL})
+    append_log(sid, "assistant", text, meta={
+        "agent_id": agent_id, "agent_name": agent["name"], "model": agent["model"], "usage": usage
+    })
 
-    resp.response = json.dumps({"text": text}, ensure_ascii=False)
+    resp.response = json.dumps(
+        {"text": text, "agent": {"id": agent_id, "name": agent["name"]}},
+        ensure_ascii=False
+    )
     resp.mimetype = "application/json"
     return resp
 
-# ------------- (ที่เหลือยังไม่เปิดใช้ในก้าวนี้) -------------
-# @app.route("/api/stt", methods=["POST"]) ...
-# @app.route("/api/tts", methods=["POST"]) ...
+# ------------- (STT/TTS จะทำในก้าวถัดไป) -------------
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    app.run(host="0.0.0.0", port=PORT)
+
