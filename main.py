@@ -4,10 +4,6 @@ from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 from agent_router import load_agents, call_agent
 
-AGENTS_CFG = os.path.join(MEMORY_DIR, "agents", "agents.json")
-os.makedirs(os.path.dirname(AGENTS_CFG), exist_ok=True)
-AGENTS, DEFAULT_AGENT_ID = load_agents(AGENTS_CFG)
-
 # =================== CONFIG ===================
 OPENAI_API_KEY  = os.getenv("OPENAI_API_KEY", "")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
@@ -29,6 +25,10 @@ def ensure_memory_dirs():
     if not os.path.exists(LOG_FILE):
         with open(LOG_FILE, "w", encoding="utf-8") as f:
             f.write("")
+
+AGENTS_CFG = os.path.join(MEMORY_DIR, "agents", "agents.json")
+os.makedirs(os.path.dirname(AGENTS_CFG), exist_ok=True)
+AGENTS, DEFAULT_AGENT_ID = load_agents(AGENTS_CFG)
 
 def append_log(session_id, role, text, meta=None):
     rec = {"t": int(time.time()), "session": session_id, "role": role, "text": text}
