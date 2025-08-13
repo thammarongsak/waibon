@@ -5,7 +5,7 @@
       "id": "waibon_gpt",
       "name": "Waibon (GPT)",
       "provider": "openai",
-      "model": "gpt-4o",        // หรือ gpt-5 ถ้าพ่อมีสิทธิ์
+      "model": "gpt-4o",
       "base_url": "https://api.openai.com/v1",
       "env_key": "OPENAI_API_KEY"
     },
@@ -13,10 +13,9 @@
       "id": "llama_groq",
       "name": "Llama (Groq)",
       "provider": "groq",
-      "model": "llama-3.1-70b-versatile",
-      "base_url": "https://api.groq.com/openai/v1",
-      "env_key": "GROQ_API_KEY"
+      "model": "llama3-70b-8192",
+      "base_url": "https://api.groq.com/openai",
+      "env_key": "LLAMA_API_KEY"
     }
-    // เพิ่มเอเจนต์ใหม่ทีหลัง แค่เติม object ตรงนี้พอ
   ]
 }
