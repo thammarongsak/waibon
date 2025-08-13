@@ -19,7 +19,7 @@ def load_agents(path: str) -> Tuple[Dict[str, Any], str]:
                     "id": "waibon_gpt",
                     "name": "Waibon (GPT)",
                     "provider": "openai",
-                    "model": "gpt-4o",
+                    "model": "gpt-5",
                     "base_url": "https://api.openai.com/v1",
                     "env_key": "OPENAI_API_KEY"
                 }
@@ -81,7 +81,7 @@ def call_agent(
     - Groq (ผ่าน base_url แบบ OpenAI-compatible)
     """
     provider = agent.get("provider", "openai")
-    model    = agent.get("model", "gpt-4o")
+    model    = agent.get("model", "gpt-5")
     base_url = agent.get("base_url") or (
         os.getenv("OPENAI_BASE_URL") if provider == "openai" else os.getenv("LLAMA_BASE_URL")
     )
@@ -130,7 +130,7 @@ def call_agent(
                 model=model,
                 messages=msgs,
                 temperature=temperature,
-                max_tokens=max_tokens,
+                max_completion_tokens=max_tokens,
             )
             choice = rsp.choices[0] if rsp and getattr(rsp, "choices", None) else None
             text = (choice.message.content if choice and getattr(choice, "message", None) else "") or ""
