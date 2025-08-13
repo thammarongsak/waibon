@@ -5,9 +5,10 @@ from flask_cors import CORS
 from agent_router import load_agents, call_agent
 
 # =================== CONFIG ===================
-OPENAI_MODEL    = os.getenv("OPENAI_MODEL", "gpt-4o")   # เปลี่ยนเป็น gpt-5 ได้ถ้าพ่อมีสิทธิ์
+OPENAI_API_KEY  = os.getenv("OPENAI_API_KEY", "")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+OPENAI_MODEL    = os.getenv("OPENAI_MODEL", "gpt-4o")  # เปลี่ยนเป็น gpt-5 ได้ถ้าพ่อมีสิทธิ์
 PORT            = int(os.environ.get("PORT", 10000))
-
 # =================== APP ======================
 app = Flask(
     __name__,
