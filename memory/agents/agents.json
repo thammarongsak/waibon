@@ -5,7 +5,7 @@
       "id": "waibon_gpt",
       "name": "Waibon (GPT)",
       "provider": "openai",
-      "model": "gpt-4o",
+      "model": "gpt-5",
       "base_url": "https://api.openai.com/v1",
       "env_key": "OPENAI_API_KEY"
     },
