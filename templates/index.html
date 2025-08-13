@@ -1,167 +1,80 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <title>ถามอะไรก็ได้กับไวบอน 🤖</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
-    <style>
-      header {
-        position: fixed;
-        top: 0;
-        width: 100%;
-        background: white;
-        padding: 1rem;
-        border-bottom: 1px solid #ddd;
-        z-index: 1000;
-      }
-      footer {
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        background: white;
-        padding: 1rem;
-        border-top: 1px solid #ddd;
-        z-index: 1000;
-      }
-      main {
-        padding-top: 180px;
-        padding-bottom: 160px;
-      }
-      .chat-block {
-        border: none;
-        padding: 10px 0;
-        margin-bottom: 10px;
-        white-space: pre-wrap;
-        font-size: 1rem;
-      }
-.chat-entry {
-  display: flex;
-  flex-direction: column;
-  gap: 0.02rem;
-  margin-bottom: 0.1rem;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-size: 1rem;
-  line-height: 1;
-}
-.chat-block {
-  padding: 5px 0;
-}
-      .timestamp {
-        font-size: 0.6rem;
-        color: gray;
-        margin-left: 1rem;  /* ✅ เว้นห่างนิดเดียวจากข้อความหลัก */
-      }
-    </style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Waibon Safe Room</title>
+  <link rel="stylesheet" href="/static/style.css"/>
 </head>
 <body>
-  <header>
-    <h1>ถามอะไรก็ได้กับไวบอน 🤖🐣</h1>
-
-    {% if tone %}
-    <div class="status-box">
-        🕹️ ตอนนี้ไวบอนอยู่ในโหมด: <strong>{{ tone }}</strong>
-    </div>
-    {% endif %}
-
-    {% if warning %}
-    <div class="status-box warning">
-        ⚠️ พี่ถามเยอะแล้วนะครับ เหลืออีก {{ remaining }} คำถามใน 10 นาทีนี้
-    </div>
-    {% elif remaining|string == '∞' %}
-    <div class="status-box">
-        🧪 โหมดส่วนตัว: ไม่จำกัดคำถาม (∞ คำถามใน 10 นาทีนี้ครับ)
-    </div>
-    {% elif remaining|int <= 2 %}
-    <div class="status-box warning">
-        ⏳ เหลืออีก {{ remaining }} คำถามใน 10 นาทีนี้ครับ
-    </div>
-    {% endif %}
-
-    <form method="POST" enctype="multipart/form-data">
-        <input 
-            id="question-input"
-            type="text" 
-            name="question" 
-            placeholder="คุยกับไวบอนได้เลยจร้าาา" 
-            value="@llama " 
-            autofocus 
-            required 
-            style="width: 100%; padding: 1rem; font-size: 1.2rem;"
-        >
-        <input type="file" name="file">
-        <button type="submit">ถามเลย</button>
-    </form>
-  </header>
-
-  
-  
-  
-  <main>
-    {% if session.chat_log %}
-      <div class="chat-block">
-        {% for entry in session.chat_log|reverse %}
-          <div class="chat-entry">
-            <span>🧍‍♂️ พี่สอง: {{ entry.question | e }} <span class="timestamp">🕒 {{ entry.ask_time }}</span></span>
-            {% if entry.file %}
-              <span>📎 แนบไฟล์: <a href="/uploads/{{ entry.file | e }}" download>{{ entry.file | e }}</a></span>
-            {% endif %}
-            <span>🤖 ไวบอน {{ entry.model }}: {{ entry.answer | e }} <span class="timestamp">🕒 {{ entry.reply_time }}</span></span>
-          </div>
-        {% endfor %}
+  <div class="app">
+    <!-- Sidebar: โปรเจ็กต์/ไฟล์งาน -->
+    <aside class="sidebar">
+      <div class="sb-top">
+        <div class="brand">ไวบอน • Projects</div>
+        <button id="newProject" class="btn btn-primary small">＋ โปรเจ็กต์ใหม่</button>
       </div>
-    {% endif %}
-  </main>
+      <ul id="projectList" class="project-list">
+        <!-- รายการโปรเจ็กต์ (mock) -->
+      </ul>
+    </aside>
 
-
-
-
-  <footer>
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-top: 2rem;">
-        <div style="margin-top: 2rem; flex: 0 0 auto;">
-            <a href="/download_log/txt" class="btn">📄 ดาวน์โหลด .txt</a>
-            <a href="/download_log/jsonl" class="btn">🧾 ดาวน์โหลด .jsonl</a>
+    <!-- Main: ห้องแชท -->
+    <main class="main">
+      <!-- Toolbar ด้านบน -->
+      <div class="toolbar">
+        <div class="left">
+          <button id="saveProject" class="btn">💾 บันทึกเป็นโปรเจ็กต์</button>
+          <button id="clearView" class="btn">🧹 เคลียร์หน้าจอ</button>
         </div>
-        <div style="font-size: 0.7rem; color: gray; margin-top: 2rem;">
-            💡 <strong>วิธีเลือกโมเดล:</strong><br>
-            &nbsp;&nbsp;&nbsp;• พิมพ์ <code>@3.5</code> เพื่อตอบด้วย GPT-3.5 (ประหยัด)<br>
-            &nbsp;&nbsp;&nbsp;• พิมพ์ <code>@4o</code> เพื่อใช้ GPT-4o<br>
-            &nbsp;&nbsp;&nbsp;• ไม่พิมพ์อะไรเลย ระบบจะเลือกให้อัตโนมัติ:<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- GPT-4o: ถ้าคำถามมีคำว่า "วิเคราะห์", "เหตุผล", "เพราะอะไร", "เจตนา", "อธิบาย", "เปรียบเทียบ", "ลึกซึ้ง", "กลยุทธ์", "วางแผน", "ซับซ้อน"<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- GPT-3.5: ถ้าเป็นคำถามทั่วไปหรือสั้น ๆ
+        <div class="right">
+          <select id="agentPicker" class="pick">
+            <option value="waibon">Waibon (หลัก)</option>
+            <option value="llama">Llama (Groq)</option>
+            <option value="ollama">Ollama (โลคัล)</option>
+          </select>
+          <button id="addAgent" class="btn">👥 เพิ่มเอเจนต์</button>
         </div>
-        <div style="margin-top: 1rem;">
-            <a href="/upload-panel" class="btn" style="background-color: green; padding: 0.6rem 1.2rem; border-radius: 6px; color: white; text-decoration: none;">🗂️ ไปจัดการไฟล์ที่อัปโหลด</a>
-            <form method="POST" action="/clear_chat" onsubmit="return confirm('ต้องการเริ่มบทสนทนาใหม่หรือไม่?');" style="margin-top: 1rem;">
-                <button type="submit" class="btn" style="background-color: orange;">🧹 เคลียร์บทสนทนา</button>
-            </form>
-    </div>
-  </footer>
+      </div>
 
-  <script>
-    window.addEventListener('DOMContentLoaded', function() {
-      const input = document.getElementById('question-input');
-      if (input) {
-        const val = input.value;
-        input.focus();
-        input.setSelectionRange(val.length, val.length);
-      }
-    });
-  </script>
+      <!-- ไทม์ไลน์แชท -->
+      <div id="chat" class="chat">
+        <!-- ตัวอย่างบับเบิล (mock) -->
+        <div class="bubble me">
+          <div class="meta"><span class="name">พ่อ</span><span class="timestamp"></span></div>
+          <div class="text">เริ่มทดสอบหน้าจอใหม่</div>
+        </div>
+        <div class="bubble bot">
+          <div class="meta"><span class="name">Waibon</span><span class="timestamp"></span></div>
+          <div class="text">รับทราบครับพ่อ — รุ่น mockup พร้อมใช้งาน</div>
+        </div>
+      </div>
 
-<!--
-✅ วิธีเก็บ chat log ถาวรให้แก้ใน main.py แบบนี้:
+      <!-- แถบใส่ข้อความ/ปุ่ม -->
+      <div class="composer">
+        <div class="left-tools">
+          <label class="btn">
+            📎 แนบไฟล์
+            <input id="attach" type="file" hidden multiple/>
+          </label>
+          <button id="micDict" class="btn">🎙️ พูด→ข้อความ</button>
+          <button id="micPTT" class="btn">🎤 กดคุย (PTT)</button>
+        </div>
 
-1. เก็บ session แบบถาวร:
-   from datetime import timedelta
-   app.permanent_session_lifetime = timedelta(days=365)
+        <textarea id="input" placeholder="พิมพ์ข้อความที่นี่…"></textarea>
 
-2. เพิ่มใน route:
-   session.permanent = True
+        <div class="right-tools">
+          <button id="send" class="btn btn-primary">ส่ง ▶</button>
+        </div>
+      </div>
+    </main>
+  </div>
 
-3. หรือให้บันทึก session.chat_log ลงไฟล์ log.jsonl ทุกครั้งหลังโพสต์
--->
+  <!-- Speaking indicator -->
+  <div id="speaking" class="speaking hidden">
+    <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+  </div>
 
+  <script src="/static/chat.js"></script>
 </body>
 </html>
