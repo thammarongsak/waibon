@@ -1,61 +1,77 @@
+// ====== Elements ======
 const chatEl   = document.getElementById('chat');
 const inputEl  = document.getElementById('input');
 const sendBtn  = document.getElementById('sendBtn');
-const agentSel = document.getElementById('agentSelect');
 const statusDot= document.getElementById('statusDot');
+const statusTx = document.getElementById('statusText');
 const clearBtn = document.getElementById('clearScreen');
 
-function addMsg(role, text, meta='') {
+// ====== UI helpers ======
+function addMsg(role, text, meta='', cls='') {
   const wrap = document.createElement('div');
-  wrap.className = `msg ${role === 'user' ? 'user' : 'bot'}`;
+  wrap.className = `msg ${role === 'user' ? 'user' : 'bot'} ${cls||''}`.trim();
   if (meta) { const m = document.createElement('div'); m.className='meta'; m.textContent=meta; wrap.appendChild(m); }
   wrap.appendChild(document.createTextNode(text));
   chatEl.appendChild(wrap);
   chatEl.scrollTop = chatEl.scrollHeight;
 }
-
-async function loadAgents() {
-  const r = await fetch('/api/agents');
-  const j = await r.json();
-  agentSel.innerHTML = '';
-  (j.agents || []).forEach(a => {
-    const opt = document.createElement('option');
-    opt.value = a.id; opt.textContent = a.name;
-    if (a.id === j.default) opt.selected = true;
-    agentSel.appendChild(opt);
-  });
-  statusDot.style.color = '#22c55e';
+function setBusy(busy, msg) {
+  sendBtn.disabled = !!busy;
+  statusDot.style.color = busy ? '#f59e0b' : '#22c55e';
+  if (statusTx) statusTx.textContent = msg || (busy ? 'กำลังส่ง…' : 'พร้อม');
 }
 
+// ====== Preflight (ฝั่งหน้า: แค่ช่วยเตือน) ======
+function quickPrecheck() {
+  // แค่แจ้งเตือนกรณีเสี่ยงทั่วไป เพื่อช่วยพ่อดีบักไว
+  // 1) โปรโตคอล: ถ้าเปิดหน้าเว็บผ่าน file:// ให้เตือน
+  if (location.protocol === 'file:') {
+    addMsg('bot', 'เตือน: กรุณาเปิดผ่านโดเมน/พอร์ตของเซิร์ฟเวอร์ ไม่ใช่ file://', 'ระบบ', 'warn');
+  }
+}
+quickPrecheck();
+
+// ====== Send flow ======
 async function send() {
   const text = (inputEl.value || '').trim();
   if (!text) return;
-  const agent_id = agentSel.value;
-  inputEl.value = ''; addMsg('user', text, 'พ่อ');
-  sendBtn.disabled = true; statusDot.style.color = '#f59e0b';
+  inputEl.value = '';
+  addMsg('user', text, 'พ่อ');
+  setBusy(true);
 
   try {
     const r = await fetch('/api/chat', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ message: text, agent_id })
+      body: JSON.stringify({ message: text }) // pattern เดิมของพ่อ: ไม่มี agent selector
     });
-    const j = await r.json();
-    if (j && j.ok) {
-      const meta = j.agent ? `${j.agent.name} (${j.agent.id})` : '';
-      addMsg('bot', j.text, meta);
+
+    // Handle non-200
+    if (!r.ok) {
+      const body = await r.text().catch(()=> '');
+      addMsg('bot', `ขัดข้อง: ${r.status} ${r.statusText}\n${body}`, 'ระบบ', 'error');
+      return;
+    }
+
+    const j = await r.json().catch(()=> ({}));
+    if (j && (j.text || j.error)) {
+      const meta = j.agent ? `${j.agent.name} (${j.agent.id})` : 'Waibon';
+      const isErr = (j.text || '').startsWith('[ระบบ] SDK OpenAI') || (j.text || '').includes('(error)');
+      addMsg('bot', j.text || j.error || 'ไม่มีข้อความตอบกลับ', meta, isErr ? 'error' : '');
     } else {
-      addMsg('bot', j.error || 'เซิร์ฟเวอร์ไม่ตอบ');
+      addMsg('bot', 'ไม่มีข้อความตอบกลับจากเซิร์ฟเวอร์', 'ระบบ', 'warn');
     }
   } catch (e) {
-    addMsg('bot', `ขัดข้อง: ${e}`);
+    addMsg('bot', `ขัดข้องฝั่งหน้า: ${e}`, 'ระบบ', 'error');
   } finally {
-    sendBtn.disabled = false; statusDot.style.color = '#22c55e'; inputEl.focus();
+    setBusy(false);
+    inputEl.focus();
   }
 }
 
+// ====== Events ======
 sendBtn.addEventListener('click', send);
-inputEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }});
-clearBtn?.addEventListener('click', () => { chatEl.innerHTML=''; });
-
-loadAgents();
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+clearBtn?.addEventListener('click', () => { chatEl.innerHTML = ''; });
