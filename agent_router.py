@@ -100,7 +100,7 @@ def call_agent(
             model=model,
             input=_messages_to_prompt(messages),
             temperature=temperature,
-            max_output_tokens=max_tokens,
+            max_completion_tokens=max_tokens,
         )
 
         # openai 1.55+ มี property นี้
@@ -147,7 +147,7 @@ def call_agent(
             model=model,
             messages=msgs,
             temperature=temperature,
-            max_tokens=max_tokens,
+            max_completion_tokens=max_tokens,
         )
         choice = rsp.choices[0] if rsp and getattr(rsp, "choices", None) else None
         text = (choice.message.content if choice and getattr(choice, "message", None) else "") or ""
