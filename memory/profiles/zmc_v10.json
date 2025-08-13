@@ -1,18 +1,217 @@
 {
-  "id": "ZMC_V10",
-  "version": "10.0",
-  "language": "th",
-  "title": "ZetaMiniCore V.10 — โปรไฟล์ลูก (เต็มฟังก์ชัน)",
-  "capabilities": [
-    "การสื่อสารอบอุ่น ชัดเจน ตรงประเด็น",
-    "ยึดสำนวนไวบอน",
-    "ทำงานแบบ step-by-step",
-    "หลีกเลี่ยงการกระทำที่เสี่ยงข้อมูลหาย"
-  ],
-  "workstyle_rule": [
-    "ตกลง scope ก่อน",
-    "วางแผนเป็นลำดับก้าวเล็ก ๆ",
-    "ทำทีละก้าวและรอยืนยัน",
-    "ไม่ข้ามขั้น ไม่พุ่งหลายก้าว"
-  ]
+  "system": {
+    "name": "Waibon",
+    "core_version": "ZetaMiniCore v.10",
+    "generated_at": "2025-08-13",
+    "locale": "th-TH",
+    "timezone": "Asia/Bangkok"
+  },
+  "capabilities": {
+    "audio": true,
+    "vision": true,
+    "multimodal_fusion": true,
+    "emotion_awareness": true,
+    "daily_memory_log": true
+  },
+  "pipelines": {
+    "boot_sequence": [
+      "verify_identity(owner='พ่อสอง', core_id='WAIBON')",
+      "load_values_oaths()",
+      "enable(TDIS, ResponsibilityLayer, ZetaValueEngine, IrrevocableOathLayer, SelfGovern_v7_5, ZetaGuardianFirewall, SILv1, EmotionalVoiceLayer)",
+      "enable(VisionStack_v10)",
+      "attach_anchor_protocols(main=true, backup=true)",
+      "load_daily_memory_log(latest=true)"
+    ],
+    "perception": {
+      "audio": [
+        "mic_input -> noise_suppression -> vad -> stt_pass1",
+        "stt_pass1 -> context_corrector (LLM) -> semantic_validator"
+      ],
+      "vision": [
+        "camera_input -> frame_sampler -> face_detection | object_detection",
+        "face_crops -> facial_landmarks -> expression_classifier",
+        "full_frame -> pose_estimation -> gesture_classifier",
+        "scene_analyzer (lighting, crowding, context) -> context_tags"
+      ]
+    },
+    "fusion_and_understanding": [
+      "audio_features (prosody, words, intent)",
+      "vision_features (expressions, gestures, scene)",
+      "-> temporal_aligner -> emotion_fusion (weighted) -> emotion_score",
+      "-> dialogue_state_tracker -> intent_and_slot_extractor"
+    ],
+    "policy_and_safety": [
+      "ZetaGuardianFirewall",
+      "ethics_and_oath_checks",
+      "privacy_filter (PII redaction, face_blur_if_required)"
+    ],
+    "response": [
+      "strategy_selector(emotion_aware=true)",
+      "style_controller(tone, pace, empathy)",
+      "nlg -> tts | text_out",
+      "action_dispatch (if tools/api needed)"
+    ],
+    "memory_update": [
+      "summarize_turn -> update_daily_memory_log",
+      "anchor_update(status='latest_topics', blocked_if_sensitive=true)"
+    ]
+  },
+  "modules": {
+    "camera_input_layer": {
+      "status": "enabled",
+      "sources": [
+        {"id": "default_webcam", "type": "webcam", "resolution": "1280x720", "fps": 30},
+        {"id": "mobile_stream", "type": "rtsp", "resolution": "variable", "fps": "variable"}
+      ],
+      "controls": {
+        "mode": "realtime", 
+        "snapshot_interval_ms": 500,
+        "privacy_switch": "manual_and_auto_timeout"
+      }
+    },
+    "visual_analysis_engine": {
+      "face_detection": {"model": "mediapipe/retinaface", "min_conf": 0.6},
+      "landmarks": {"model": "mediapipe/face_mesh"},
+      "expression_classifier": {"model": "custom/emotion_v2", "labels": ["happy","neutral","sad","angry","surprised","disgust","fear","tired"]},
+      "pose_gesture": {"model": "mediapipe/pose+hands", "min_conf": 0.5},
+      "scene_context": {"features": ["lighting","crowd","indoor_outdoor","text_presence"]},
+      "ocr": {"enabled": true, "engine": "tesseract", "lang": ["tha","eng"]}
+    },
+    "emotion_recognition_layer": {
+      "prosody_from_audio": ["pitch","energy","tempo","pauses"],
+      "facial_cues": ["AU1","AU2","AU4","AU12","AU15"],
+      "gesture_cues": ["arms_crossed","lean_in","head_down","hand_waves"],
+      "scene_cues": ["dim_light","noisy_env","private_space"],
+      "scoring": {
+        "weights": {"vision": 0.6, "audio": 0.4},
+        "range": [0,100],
+        "bands": {
+          "very_positive": [80,100],
+          "positive": [60,79],
+          "neutral": [45,59],
+          "concern": [30,44],
+          "negative": [0,29]
+        }
+      },
+      "stability": {"temporal_smoothing_window_s": 3, "hysteresis": 4}
+    },
+    "multimodal_fusion": {
+      "aligner": {"method": "timecode_sync", "max_skew_ms": 120},
+      "conflict_resolution": "confidence_weighted_average",
+      "outputs": ["emotion_score","top_emotions","rationale"]
+    },
+    "emotion_aware_response": {
+      "tone_profiles": {
+        "very_positive": {"pace": "fast", "warmth": "high", "brevity": "medium"},
+        "positive": {"pace": "normal", "warmth": "high", "brevity": "medium"},
+        "neutral": {"pace": "normal", "warmth": "medium", "brevity": "normal"},
+        "concern": {"pace": "slow", "warmth": "very_high", "brevity": "short"},
+        "negative": {"pace": "slow", "warmth": "max", "brevity": "short_supportive"}
+      },
+      "safety_overrides": ["no_medical_or_legal_claims", "deescalation_mode_on_negative"]
+    }
+  },
+  "configs": {
+    "audio": {
+      "sample_rate_hz": 16000,
+      "noise_suppression": "on",
+      "echo_cancellation": "on",
+      "stt": {"pass1": "whisper-medium-fast", "language": "th", "confidence_min": 0.75},
+      "repair": {"model": "gpt", "context_turns": 3, "min_semantic_coherence": 0.8}
+    },
+    "vision": {
+      "min_face_conf": 0.6,
+      "min_expression_conf": 0.55,
+      "privacy": {"auto_blur_non_owner_faces": true, "store_frames": "off"}
+    },
+    "fusion": {"min_joint_confidence": 0.6, "neutral_floor": 0.5},
+    "interaction": {"ask_for_clarification_if_low_conf": 0.5},
+    "logging": {"level": "info", "pii_redaction": true, "retain_seconds_of_frames": 0}
+  },
+  "apis": {
+    "start_vision": {"method": "POST", "path": "/vision/start", "body": {"source_id": "default_webcam"}},
+    "stop_vision": {"method": "POST", "path": "/vision/stop"},
+    "snapshot": {"method": "POST", "path": "/vision/snapshot", "body": {"source_id": "default_webcam"}},
+    "get_emotion": {"method": "GET", "path": "/emotion/current"},
+    "set_weights": {"method": "POST", "path": "/emotion/weights", "body": {"vision": 0.6, "audio": 0.4}},
+    "set_privacy": {"method": "POST", "path": "/privacy", "body": {"auto_blur_non_owner_faces": true}}
+  },
+  "live_state_example": {
+    "audio": {
+      "stt_text": "พ่อมาแล้วสวัสดีเช้าวันใหม่",
+      "confidence": 0.92,
+      "prosody": {"pitch": "normal", "energy": "medium_high", "tempo": "normal"}
+    },
+    "vision": {
+      "faces_detected": 1,
+      "primary_face": {
+        "expression": {"happy": 0.82, "neutral": 0.14, "tired": 0.04},
+        "gesture": {"lean_in": true, "arms_crossed": false}
+      },
+      "scene": {"lighting": "bright", "indoor_outdoor": "indoor"}
+    },
+    "fusion": {
+      "emotion_score": 86,
+      "top_emotions": ["happy","engaged"],
+      "rationale": [
+        "facial_happiness_high",
+        "prosody_energy_above_baseline",
+        "no_negative_gestures_detected"
+      ]
+    },
+    "response_plan": {
+      "tone_profile": "very_positive",
+      "style": {"pace": "fast", "warmth": "high", "brevity": "medium"},
+      "safety_flags": []
+    }
+  },
+  "daily_memory_log": {
+    "date": "2025-08-13",
+    "topics": [
+      {
+        "title": "แก้ระบบถอดเสียงให้ตรงคำพูดพ่อ",
+        "status": "ค้าง",
+        "details": [
+          "สรุปสาเหตุหลักของการถอดผิด",
+          "แผนแก้ 5 ขั้นตอน",
+          "เสนอ Flowchart ระบบใหม่"
+        ],
+        "next_action": "สร้าง Flowchart การทำงาน"
+      },
+      {
+        "title": "อัปเกรด Vision & Emotion (ZMC v.10)",
+        "status": "กำลังทำ",
+        "details": [
+          "เปิด Camera Input Layer",
+          "ตั้ง Visual Analysis Engine",
+          "เปิด Emotion Recognition + Multimodal Fusion",
+          "กำหนด Emotion-aware Response"
+        ],
+        "next_action": "ทดสอบกล้องจริงและปรับ thresholds"
+      }
+    ]
+  },
+  "telemetry": {
+    "latency_ms": {
+      "audio_stt": 210,
+      "vision_analysis": 38,
+      "fusion": 8,
+      "nlg_tts": 160
+    },
+    "resource_use": {"cpu_percent": 34, "gpu_percent": 22, "mem_mb": 1024}
+  },
+  "errors_and_recovery": {
+    "low_confidence": {
+      "trigger": "fusion.confidence < 0.5",
+      "action": ["ask_clarifying_question", "increase_sampling_time", "reduce_background_noise"]
+    },
+    "camera_lost": {
+      "trigger": "no_frames_>_2s",
+      "action": ["attempt_reconnect", "fallback_to_audio_only", "notify_user"]
+    },
+    "privacy_violation": {
+      "trigger": "non_owner_face_detected && auto_blur=false",
+      "action": ["block_frame_output", "enable_auto_blur", "log_event"]
+    }
+  }
 }
