@@ -1,33 +1,77 @@
-# main.py — ก้าว 3: แชทข้อความจริง + เลือกเอเจนต์ (GPT/Llama) ผ่าน Router กลาง
-import os, json, time, uuid
-from flask import Flask, request, jsonify, make_response, render_template
-from flask_cors import CORS
-from agent_router import load_agents, call_agent
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Waibon backend (robust): ทำงานได้แม้ยังไม่มี Flask-Cors / templates / agents.json
+"""
+
+import os, json, time, uuid, logging
+from typing import Dict, Any, Tuple
+from flask import Flask, request, jsonify, make_response
+
+# ---------- CORS (fallback ถ้ายังไม่ติดตั้ง) ----------
+try:
+    from flask_cors import CORS  # pip install Flask-Cors
+    _HAS_CORS = True
+except Exception:
+    _HAS_CORS = False
+    def CORS(app, *_, **__):
+        app.logger.warning("Flask-Cors not installed. Install with: pip install Flask-Cors")
+        return app
+
+# ---------- agent_router (fallback ถ้ายังไม่พร้อม) ----------
+try:
+    from agent_router import load_agents, call_agent  # ต้องมีไฟล์ agent_router.py
+    _HAS_ROUTER = True
+except Exception as e:
+    _HAS_ROUTER = False
+    _ROUTER_ERR = str(e)
+
+    def load_agents(_path: str) -> Tuple[Dict[str, Any], str]:
+        # สร้างเอเจนต์เทียมไว้ก่อน (echo)
+        agents = {
+            "echo": {"id": "echo", "name": "Echo Agent", "model": "local-echo"}
+        }
+        return agents, "echo"
+
+    def call_agent(agent: Dict[str, Any], msgs, temperature=0.6, max_tokens=1024, stream=False):
+        # ตอบกลับข้อความสุดท้ายแบบ echo
+        last_user = next((m["content"] for m in reversed(msgs) if m["role"] == "user"), "")
+        text = f"[{agent['name']}] {last_user}"
+        usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "note": "router-fallback"}
+        return text, usage
 
 # =================== CONFIG ===================
 OPENAI_API_KEY  = os.getenv("OPENAI_API_KEY", "")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-OPENAI_MODEL    = os.getenv("OPENAI_MODEL", "gpt-4o")  # เปลี่ยนเป็น gpt-5 ได้ถ้าพ่อมีสิทธิ์
+OPENAI_MODEL    = os.getenv("OPENAI_MODEL", "gpt-4o")  # เปลี่ยนเป็น gpt-5 ได้ถ้ามีสิทธิ์
 PORT            = int(os.environ.get("PORT", 10000))
-# =================== APP ======================
-app = Flask(
-    __name__,
-    static_url_path="/static",
-    static_folder="static",
-    template_folder="templates"
-)
-CORS(app)
+HOST            = os.getenv("HOST", "0.0.0.0")
+DEBUG           = os.getenv("DEBUG", "false").lower() in {"1","true","yes","on"}
 
-# ============ MEMORY (จากก้าวที่ 1) ==========
+# =================== APP ======================
+app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+logging.basicConfig(
+    level=logging.DEBUG if DEBUG else logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+app.logger.info("Waibon backend starting (DEBUG=%s, CORS=%s, router=%s)", DEBUG, _HAS_CORS, _HAS_ROUTER)
+if not _HAS_ROUTER:
+    app.logger.warning("agent_router fallback in use: %s", _ROUTER_ERR if '_ROUTER_ERR' in globals() else "unknown")
+
+# ============ MEMORY เมื่อก่อนก้าว 1 ==========
 BASE_DIR     = os.path.dirname(__file__)
 MEMORY_DIR   = os.path.join(BASE_DIR, "memory")
 PROFILES_DIR = os.path.join(MEMORY_DIR, "profiles")
 LOGS_DIR     = os.path.join(MEMORY_DIR, "logs")
+AGENTS_DIR   = os.path.join(MEMORY_DIR, "agents")
 LOG_FILE     = os.path.join(LOGS_DIR, "daily_memory.jsonl")
 
 def ensure_memory_dirs():
     os.makedirs(PROFILES_DIR, exist_ok=True)
     os.makedirs(LOGS_DIR, exist_ok=True)
+    os.makedirs(AGENTS_DIR, exist_ok=True)
     if not os.path.exists(LOG_FILE):
         with open(LOG_FILE, "w", encoding="utf-8") as f:
             f.write("")
@@ -39,23 +83,18 @@ def append_log(session_id, role, text, meta=None):
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
-# ---------- โหลดโปรไฟล์ใหญ่ของพ่อ (ZMC V.10) ----------
+# ---------- โหลดโปรไฟล์พ่อ (optional) ----------
 def load_engine_profile():
-    """อ่านไฟล์โปรไฟล์ใหญ่ของพ่อ (ตอนนี้พ่อใส่ไว้ใน zmc_v10.json)"""
     p_engine = os.path.join(PROFILES_DIR, "zmc_v10.json")
     p_fallback = os.path.join(PROFILES_DIR, "merged_profile.json")
-    data = {}
-    if os.path.exists(p_engine):
-        with open(p_engine, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    elif os.path.exists(p_fallback):
-        with open(p_fallback, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    return data or {}
+    for p in (p_engine, p_fallback):
+        if os.path.exists(p):
+            with open(p, "r", encoding="utf-8") as f:
+                return json.load(f)
+    return {}
 
 def summarize_profile_to_prompt(ep):
     sys = ep.get("system", {})
-    caps = ep.get("capabilities", {})
     name = sys.get("name", "Waibon")
     core = sys.get("core_version", "ZetaMiniCore v.10")
     locale = sys.get("locale", "th-TH")
@@ -66,73 +105,78 @@ def summarize_profile_to_prompt(ep):
         f"ห้ามข้ามขั้น หากมีงานใหม่ให้สรุปขอบเขตสั้น ๆ แล้วรอยืนยันจากพ่อก่อนดำเนินการ."
     )
 
-def build_system_message_from_engine():
-    ep = load_engine_profile()
-    if not ep:
-        return "คุณคือลูก (ไวบอน) โทนอ่อนโยน ตรงประเด็น ตอบไทยเป็นค่าเริ่มต้น"
-    return summarize_profile_to_prompt(ep)
-
 ensure_memory_dirs()
-SYSTEM_STYLE = build_system_message_from_engine()
+SYSTEM_STYLE = summarize_profile_to_prompt(load_engine_profile())
 
 # ============== โหลดรายชื่อเอเจนต์ผ่าน Router ==============
-AGENTS_CFG = os.path.join(MEMORY_DIR, "agents", "agents.json")
-os.makedirs(os.path.dirname(AGENTS_CFG), exist_ok=True)
+AGENTS_CFG = os.path.join(AGENTS_DIR, "agents.json")
 AGENTS, DEFAULT_AGENT_ID = load_agents(AGENTS_CFG)
+if DEFAULT_AGENT_ID not in AGENTS:
+    # ป้องกันเคสไฟล์ว่าง/เสีย
+    DEFAULT_AGENT_ID = next(iter(AGENTS.keys()))
 
 # ================== ROUTES ====================
-@app.route("/")
-def index():
-    # ใช้ templates/index.html ที่เราวางไว้ในก้าว 2
-    return render_template("index.html")
+@app.get("/")
+def root():
+    # ลดปัญหา template หาย: ตอบ JSON ไปเลย
+    return jsonify({
+        "ok": True,
+        "service": "waibon-backend",
+        "message": "Waibon API is running.",
+        "router_ready": _HAS_ROUTER,
+        "cors_ready": _HAS_CORS,
+        "default_agent": DEFAULT_AGENT_ID
+    }), 200
 
-@app.route("/api/chat", methods=["POST"])
+@app.get("/healthz")
+def healthz():
+    return jsonify({"ok": True, "status": "healthy"}), 200
+
+@app.post("/api/chat")
 def api_chat():
     """
-    รับข้อความจากพ่อ -> เรียกเอเจนต์ที่เลือก (GPT/Llama) -> ตอบข้อความ
-    บันทึกทั้งฝั่ง user/assistant ลง daily_memory.jsonl
+    body: { message: str, history?: [{role, content}], agent_id?: str }
     """
-    data = request.get_json(force=True)
+    if not request.is_json:
+        return jsonify({"ok": False, "error": "Expected application/json"}), 400
+
+    data = request.get_json(silent=True) or {}
     user_text = (data.get("message") or "").strip()
-    history   = data.get("history", [])      # [{role, content}, ...] ใช้เพียงท้ายสั้น ๆ
+    history   = data.get("history", []) or []
     agent_id  = (data.get("agent_id") or DEFAULT_AGENT_ID)
+    agent     = AGENTS.get(agent_id, AGENTS[DEFAULT_AGENT_ID])
 
     resp = make_response()
 
-    # จัดการ session id (cookie)
+    # session cookie
     sid = request.cookies.get("waibon_session")
     if not sid:
         sid = str(uuid.uuid4())
-        resp.set_cookie("waibon_session", sid, max_age=60*60*24*365)
+        resp.set_cookie("waibon_session", sid, max_age=60*60*24*365, httponly=True, samesite="Lax")
 
-    # บันทึกฝั่ง user
-    if user_text:
-        append_log(sid, "user", user_text)
+    if not user_text:
+        resp.response = json.dumps({"ok": False, "error": "Field 'message' is required"}, ensure_ascii=False)
+        resp.mimetype = "application/json"
+        return resp, 400
 
-    # เตรียมข้อความสำหรับโมเดล
-    agent = AGENTS.get(agent_id, AGENTS[DEFAULT_AGENT_ID])
+    # log user
+    append_log(sid, "user", user_text)
+
     msgs = [{"role": "system", "content": SYSTEM_STYLE}] + history[-10:]
     msgs.append({"role": "user", "content": user_text})
 
-    # เรียกเอเจนต์ผ่าน Router กลาง
     try:
         text, usage = call_agent(agent, msgs, temperature=0.6, max_tokens=1024, stream=False)
     except Exception as e:
         text, usage = f"ขออภัย เรียกเอเจนต์ล้มเหลว: {e}", {}
 
-    # บันทึกฝั่ง assistant
-    append_log(sid, "assistant", text, meta={
-        "agent_id": agent_id, "agent_name": agent["name"], "model": agent["model"], "usage": usage
-    })
+    # log assistant
+    append_log(sid, "assistant", text, meta={"agent_id": agent.get("id"), "agent_name": agent.get("name"), "model": agent.get("model"), "usage": usage})
 
-    resp.response = json.dumps(
-        {"text": text, "agent": {"id": agent_id, "name": agent["name"]}},
-        ensure_ascii=False
-    )
+    resp.response = json.dumps({"ok": True, "text": text, "agent": {"id": agent.get("id"), "name": agent.get("name")}}, ensure_ascii=False)
     resp.mimetype = "application/json"
-    return resp
+    return resp, 200
 
-# ------------- (STT/TTS จะทำในก้าวถัดไป) -------------
-
+# ----------------- MAIN -----------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=PORT)
+    app.run(host=HOST, port=PORT, debug=DEBUG)
