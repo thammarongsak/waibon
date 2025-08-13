@@ -18,6 +18,12 @@ app = Flask(__name__, static_url_path="/static", static_folder="static", templat
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 logging.basicConfig(
+try:
+    import openai as _openai
+    app.logger.info("OpenAI SDK version = %s", getattr(_openai, "__version__", "unknown"))
+except Exception:
+    app.logger.warning("OpenAI SDK not importable at boot")
+
     level=logging.DEBUG if DEBUG else logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
