@@ -1,55 +1,47 @@
-
-body {
-    font-family: 'Sarabun', sans-serif;
-    background-color: #fdfcf9;
-    color: #2c2c2c;
-    margin: 2rem;
+:root{
+  --bg:#f6f7fb; --panel:#ffffff; --line:#e5e7eb; --text:#1f2937;
+  --muted:#9ca3af; --brand:#111827; --user:#e0f2fe; --bot:#eef2ff;
 }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto;background:var(--bg);color:var(--text)}
+.app{display:grid;grid-template-columns:280px 1fr;height:100vh}
 
-h1 {
-    color: #333;
-    font-size: 2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
+.sidebar{background:#0f172a;color:#fff;display:flex;flex-direction:column;border-right:1px solid #0b1222}
+.sb-top{padding:12px;border-bottom:1px solid #1f2a44;display:flex;gap:8px;align-items:center;justify-content:space-between}
+.brand{font-weight:700}
+.project-list{list-style:none;margin:0;padding:8px;overflow:auto}
+.project-list li{padding:8px 10px;border-radius:8px;cursor:pointer}
+.project-list li:hover{background:#0b1222}
 
-input[type="text"] {
-    padding: 0.6rem;
-    font-size: 1rem;
-    width: 60%;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    margin-right: 0.5rem;
-}
+.main{display:flex;flex-direction:column;height:100vh}
+.toolbar{display:flex;justify-content:space-between;gap:8px;padding:10px;border-bottom:1px solid var(--line);background:var(--panel)}
+.pick{padding:6px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.btn{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+.btn:hover{background:#f3f4f6}
+.btn.small{padding:6px 8px}
+.btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn-primary:hover{opacity:.92}
 
-button {
-    padding: 0.6rem 1.2rem;
-    font-size: 1rem;
-    background-color: #444cf7;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-}
+.chat{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.bubble{max-width:78%;padding:12px 14px;border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+.bubble .meta{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
+.bubble .name{font-weight:600}
+.bubble .timestamp{font-size:10px;color:var(--muted)} /* เล็กที่สุดเท่าที่อ่านได้ */
+.bubble .text{white-space:pre-wrap;line-height:1.55}
 
-button:hover {
-    background-color: #2c34e3;
-}
+.me{align-self:flex-start;background:var(--user)}   /* พ่อ = ซ้าย */
+.bot{align-self:flex-end;background:var(--bot)}     /* ลูก/เอเจนต์ = ขวา */
 
-small {
-    color: #888;
-    font-style: italic;
-    display: block;
-    margin-top: 0.5rem;
-}
+.composer{display:grid;grid-template-columns:auto 1fr auto;gap:8px;padding:10px;border-top:1px solid var(--line);background:var(--panel)}
+textarea#input{width:100%;min-height:64px;max-height:160px;resize:vertical;padding:12px;border-radius:12px;border:1px solid var(--line);outline:none}
+.left-tools,.right-tools{display:flex;gap:8px;align-items:center}
 
-.response-box {
-    margin-top: 2rem;
-    background: #fff;
-    padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 0 8px rgba(0,0,0,0.1);
-    max-width: 800px;
-    line-height: 1.6;
-}
+/* speaking indicator (คลื่นเสียง) */
+.speaking{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:6px;padding:8px 10px;background:#111827;color:#fff;border-radius:10px}
+.speaking.hidden{display:none}
+.speaking .bar{width:6px;height:16px;background:#fff;animation:spk 1s infinite ease-in-out}
+.speaking .bar:nth-child(2){animation-delay:.1s}
+.speaking .bar:nth-child(3){animation-delay:.2s}
+.speaking .bar:nth-child(4){animation-delay:.3s}
+@keyframes spk{0%,100%{height:8px}50%{height:22px}}
