@@ -13,11 +13,12 @@ def _ensure_v1(url: Optional[str]) -> Optional[str]:
     if not url:
         return url
     u = url.rstrip("/")
-    if not u.endswith("/v1"):
-        u = u + "/v1"
-    return u
+    return u if u.endswith("/v1") else (u + "/v1")
 
-# ---------- Load agents (GPT-5 only) ----------
+def _is_gpt5(model: str) -> bool:
+    return model.lower().startswith("gpt-5")
+
+# ---------- Load agents (GPT‑5 first) ----------
 def load_agents(path: str) -> Tuple[Dict[str, Any], str]:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     if not os.path.exists(path):
@@ -46,7 +47,6 @@ def load_agents(path: str) -> Tuple[Dict[str, Any], str]:
         aid = item.get("id")
         if not aid:
             raise ValueError("Agent missing 'id'")
-        # normalize base_url for safety
         if item.get("base_url"):
             item["base_url"] = _ensure_v1(item["base_url"])
         agents[aid] = item
@@ -57,7 +57,7 @@ def load_agents(path: str) -> Tuple[Dict[str, Any], str]:
         default_id = next(iter(agents.keys()))
     return agents, default_id
 
-# ---------- Prompt building (system+history+user -> single input string) ----------
+# ---------- Prompt builder ----------
 def _messages_to_prompt(messages: List[Dict[str, str]]) -> str:
     lines = []
     for m in messages:
@@ -67,21 +67,19 @@ def _messages_to_prompt(messages: List[Dict[str, str]]) -> str:
         lines.append(f"{prefix} {text}")
     return "\n".join(lines) + "\nAssistant:"
 
-def _is_gpt5(model: str) -> bool:
-    return model.lower().startswith("gpt-5")
-
-# ---------- Single-path caller: Responses API (GPT‑5 only) ----------
+# ---------- Main caller (robust to missing .responses) ----------
 def call_agent(
     agent: Dict[str, Any],
     messages: List[Dict[str, str]],
-    temperature: float = 1.0,     # ignored for GPT‑5
+    temperature: float = 1.0,     # GPT‑5: จะไม่ถูกส่ง (ใช้ค่า default=1)
     max_tokens: int = 1024,
-    stream: bool = False          # not used in this step
+    stream: bool = False          # (ยังไม่ใช้ในชุดนี้)
 ):
     """
-    GPT‑5 only, using Responses API.
-    - Uses `max_completion_tokens`
-    - Does NOT send `temperature` for GPT‑5 (default=1 only)
+    เส้นทางหลัก: Responses API (openai>=1.x)
+    - ใช้ max_completion_tokens
+    - ถ้าเป็น GPT‑5 จะไม่ส่ง temperature
+    หาก SDK ไม่มี `.responses` -> ไม่ล้ม แต่ส่งข้อความอธิบายให้ผู้ใช้ (UI) แทน
     """
     from openai import OpenAI
 
@@ -90,17 +88,24 @@ def call_agent(
     api_key  = (os.getenv(agent.get("env_key", "OPENAI_API_KEY"), "") or "").strip()
 
     client = OpenAI(api_key=api_key, base_url=base_url)
-    kwargs = {
-        "model": model,
-        "input": _messages_to_prompt(messages),
-        "max_completion_tokens": max_tokens
-    }
-    if not _is_gpt5(model):
-        # (เผื่ออนาคตอยากเพิ่ม agent อื่น) — GPT‑5 ห้ามส่ง temperature
-        kwargs["temperature"] = temperature
+    prompt = _messages_to_prompt(messages)
 
+    # ลองใช้ Responses API (ถ้า SDK รองรับ)
     try:
+        # ถ้า SDK เก่า attribute นี้จะไม่มี -> AttributeError
+        _ = client.responses
+        kwargs = {
+            "model": model,
+            "input": prompt,
+            "max_completion_tokens": max_tokens
+        }
+        # GPT‑5 ไม่ให้กำหนด temperature
+        if not _is_gpt5(model):
+            kwargs["temperature"] = temperature
+
         rsp = client.responses.create(**kwargs)
+
+        # ดึงข้อความออกจากผลลัพธ์
         text = getattr(rsp, "output_text", None)
         if text is None:
             parts = []
@@ -111,7 +116,18 @@ def call_agent(
             text = "".join(parts)
         usage = getattr(rsp, "usage", {}) or {}
         return (text or "").strip(), dict(usage)
-    except Exception as e:
-        # do not crash the app — return an explanatory message
+
+    except AttributeError:
+        # SDK ที่รันอยู่ไม่มี Responses API -> ส่งคำอธิบายกลับไปให้ UI (กันแอปล้ม)
+        msg = (
+            "[ระบบ] SDK OpenAI ในสภาพแวดล้อมนี้ยังไม่มี Responses API (client.responses) \n"
+            "วิธีแก้: แก้ requirements ให้เป็น openai==1.55.3 แล้วกด Clear build cache + Deploy ใหม่บน Render\n"
+            "หมายเหตุ: GPT‑5 ต้องใช้ Responses API เท่านั้น"
+        )
         last_user = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
-        return f"[{agent.get('name','agent')}] (error) {last_user}\n\nรายละเอียดข้อผิดพลาด: {e}", {}
+        return f"{msg}\n\n(ข้อความล่าสุดของพ่อ): {last_user}", {}
+
+    except Exception as e:
+        # ข้อผิดพลาดอื่น ๆ (เช่น คีย์/สิทธิ์/โมเดล)
+        last_user = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
+        return f"[Waibon] (error) {last_user}\n\nรายละเอียดข้อผิดพลาด: {e}", {}
