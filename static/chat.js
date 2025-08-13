@@ -64,7 +64,18 @@ async function sendMessage() {
     });
     const data = await r.json();
     const answer = data.text || "(ไม่มีคำตอบ)";
+    
     // ใส่ชื่อเอเจนต์เริ่มต้นเป็น Waibon (หลายเอเจนต์จะทำในก้าวถัดไป)
+    const agent_id = document.getElementById("agentPicker").value || "waibon_gpt";
+    const r = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg, history: [], agent_id })
+    });
+    const data = await r.json();
+    const agentName = (data.agent && data.agent.name) || "Agent";
+    addBubble({ who: "bot", name: agentName, text: data.text || "(ไม่มีคำตอบ)" });
+    
     addBubble({ who: "bot", name: "Waibon", text: answer });
   } catch (e) {
     addBubble({ who: "bot", name: "Waibon", text: "เรียก /api/chat ไม่สำเร็จ" });
