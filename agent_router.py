@@ -1,3 +1,4 @@
+# agent_router.py — ตัวกลางเรียกเอเจนต์หลายค่ายผ่านสัญญา /chat/completions
 import os, json, requests
 
 def load_agents(config_path):
@@ -13,7 +14,8 @@ def call_agent(agent, messages, temperature=0.6, max_tokens=1024, stream=False):
     key   = os.getenv(agent["env_key"], "")
     url = f"{base}/chat/completions"
     headers = {"Content-Type": "application/json"}
-    if key: headers["Authorization"] = f"Bearer {key}"
+    if key:
+        headers["Authorization"] = f"Bearer {key}"
     payload = {
         "model": model,
         "messages": messages,
