@@ -2,5 +2,13 @@ services:
   - type: web
     name: waibon
     env: python
+    plan: free   # หรือ starter/standard ตามที่พ่อเลือกใช้
     buildCommand: ""
-    startCommand: "python main.py"
+    startCommand: "gunicorn main:app -b 0.0.0.0:$PORT --timeout 120"
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEBUG
+        value: "false"
