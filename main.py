@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
-Waibon • GPT‑5 only, single-path Responses API + Preflight Self-Check.
+Waibon • Production main.py
+- OpenAI Responses API (GPT-5 พร้อมโมเดลอื่น)
+- /healthz สำหรับตรวจ SDK/สิทธิ์
+- /api/chat: รับ {"message","history","agent_id"} → ส่ง {"text", "agent"}
 """
 
 import os, json, time, uuid, logging, requests
 from typing import Dict, Any, List, Optional
 from flask import Flask, request, jsonify, make_response, render_template
 from flask_cors import CORS
-from agent_router import load_agents, call_agent
+from openai import OpenAI
 
 # ---------------- App & Config ----------------
-PORT  = int(os.environ.get("PORT", 10000))
+PORT  = int(os.environ.get("PORT", "10000"))
 HOST  = os.getenv("HOST", "0.0.0.0")
 DEBUG = os.getenv("DEBUG", "false").lower() in {"1","true","yes","on"}
 
@@ -23,22 +27,13 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 
-# Log OpenAI SDK version
-try:
-    import openai as _openai
-    app.logger.info("OpenAI SDK version = %s", getattr(_openai, "__version__", "unknown"))
-except Exception as _e:
-    app.logger.warning("OpenAI SDK not importable at boot: %s", _e)
-
-# ---------------- Memory & Paths -------------
+# ---------------- Memory (simple daily log) ---
 BASE_DIR   = os.path.dirname(__file__)
 MEM_DIR    = os.path.join(BASE_DIR, "memory")
-AGENTS_DIR = os.path.join(MEM_DIR, "agents")
 LOGS_DIR   = os.path.join(MEM_DIR, "logs")
 LOG_FILE   = os.path.join(LOGS_DIR, "daily_memory.jsonl")
 
 def ensure_dirs():
-    os.makedirs(AGENTS_DIR, exist_ok=True)
     os.makedirs(LOGS_DIR, exist_ok=True)
     if not os.path.exists(LOG_FILE):
         with open(LOG_FILE, "w", encoding="utf-8") as f:
@@ -51,92 +46,112 @@ def append_log(session_id: str, role: str, text: str, meta: Optional[Dict[str, A
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
-# ---------------- Load Agents (GPT‑5 only) ----------------
-AGENTS_CFG = os.path.join(AGENTS_DIR, "agents.json")
-try:
-    AGENTS, DEFAULT_AGENT_ID = load_agents(AGENTS_CFG)
-except Exception as e:
-    app.logger.error("Failed to load agents.json: %s", e)
-    # hard default to GPT‑5 agent to avoid crash
-    AGENTS = {
-        "waibon_gpt5": {
-            "id": "waibon_gpt5",
-            "name": "Waibon (GPT‑5)",
-            "provider": "openai",
-            "model": "gpt-5",
-            "base_url": "https://api.openai.com/v1",
-            "env_key": "OPENAI_API_KEY"
-        }
-    }
-    DEFAULT_AGENT_ID = "waibon_gpt5"
+# ---------------- OpenAI Client & Agents ------
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+if not OPENAI_API_KEY:
+    raise RuntimeError("Missing OPENAI_API_KEY")
+
+client = OpenAI(api_key=OPENAI_API_KEY)
+
+# แผนผังเอเจนต์ (เพิ่ม/แก้ได้ตามต้องการ)
+AGENTS: Dict[str, Dict[str, Any]] = {
+    "waibon_gpt5": {
+        "id": "waibon_gpt5",
+        "name": "Waibon (GPT-5)",
+        "model": "gpt-5",
+        "temperature": 1.0,
+        "max_output_tokens": 1024,
+    },
+    # ใช้โมเดลถูกลงตอนแชททั่ว ๆ ไปได้
+    "waibon_mini": {
+        "id": "waibon_mini",
+        "name": "Waibon (4o-mini)",
+        "model": "gpt-4o-mini",
+        "temperature": 0.9,
+        "max_output_tokens": 1024,
+    },
+}
+DEFAULT_AGENT_ID = "waibon_gpt5"
 
 SYSTEM_STYLE = (
-    "คุณคือไวบอน ผู้ช่วยของ 'พ่อ' ทำงานทีละก้าว ตอบไทยชัดเจน "
-    "สรุปและตรวจสอบงานก่อนส่งทุกครั้ง ถ้าพบปัญหาให้แก้เองและอธิบายสั้นๆ"
+    "คุณคือไวบอน ผู้ช่วยของ 'พ่อสอง' ทำงานทีละก้าว ตอบไทยชัดเจน "
+    "สรุปและตรวจสอบงานก่อนส่งทุกครั้ง ถ้าพบปัญหาให้แก้เองและอธิบายสั้น ๆ"
 )
 
-# ---------------- Preflight / Self-Check Module ----------------
-def _ensure_v1(url: Optional[str]) -> str:
-    if not url: return "https://api.openai.com/v1"
-    u = url.rstrip("/")
-    return u if u.endswith("/v1") else (u + "/v1")
+def ensure_responses_api():
+    if not hasattr(client, "responses"):
+        raise RuntimeError(
+            "OpenAI SDK ไม่มี `client.responses`. ให้ pin openai==1.55.3 แล้ว Clear build cache + Deploy ใหม่"
+        )
 
-def self_check(deep: bool = True) -> Dict[str, Any]:
+def call_openai_responses(agent: Dict[str, Any], messages: List[Dict[str, str]]) -> Dict[str, Any]:
     """
-    ตรวจสอบงานก่อนส่ง:
-    - env: OPENAI_API_KEY, OPENAI_BASE_URL
-    - key format (เริ่มด้วย sk- และไม่มีช่องว่าง)
-    - base_url ลงท้าย /v1
-    - (deep) ยิง /models เพื่อตรวจสิทธิ์/การเชื่อมต่อ
+    messages เป็น list แบบ [{"role":"system|user|assistant","content":"..."}]
+    จะ bundle เป็น input textual เดียวให้ Responses API
     """
-    agent = AGENTS.get(DEFAULT_AGENT_ID)
-    api_key = (os.getenv(agent.get("env_key", "OPENAI_API_KEY"), "") or "").strip()
-    base_url = _ensure_v1(agent.get("base_url") or os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"))
+    ensure_responses_api()
 
-    status = {
-        "env_key_present": bool(api_key),
-        "key_format_ok": api_key.startswith("sk-") and " " not in api_key,
-        "base_url": base_url,
-        "base_url_ok": base_url.endswith("/v1"),
-        "sdk_version": getattr(__import__("openai"), "__version__", "unknown"),
-        "deep_ok": None,
-        "deep_message": ""
-    }
+    # รวมข้อความแบบง่าย: system + history + user ล่าสุด
+    lines: List[str] = []
+    for m in messages:
+        role = m.get("role", "user")
+        content = m.get("content", "")
+        if not content:
+            continue
+        prefix = {"system": "[SYSTEM]", "assistant": "Assistant:", "user": "User:"}.get(role, role + ":")
+        lines.append(f"{prefix} {content}")
+    prompt = "\n".join(lines).strip()
 
-    if deep and api_key:
+    resp = client.responses.create(
+        model=agent["model"],
+        input=prompt,
+        temperature=agent.get("temperature", 1.0),
+        max_output_tokens=agent.get("max_output_tokens", 1024),
+    )
+
+    # ปลอดภัยสุด: ใช้ output_text ถ้ามี
+    output_text = getattr(resp, "output_text", None)
+    if output_text is None:
         try:
-            r = requests.get(
-                base_url.rstrip("/") + "/models",
-                headers={"Authorization": f"Bearer {api_key}"},
-                timeout=10
-            )
-            status["deep_ok"] = (r.status_code == 200)
-            status["deep_message"] = f"{r.status_code} {r.text[:200]}"
-        except Exception as e:
-            status["deep_ok"] = False
-            status["deep_message"] = str(e)
+            output_text = resp.output[0].content[0].text or ""
+        except Exception:
+            output_text = json.dumps(resp.model_dump(), ensure_ascii=False)
 
-    return status
+    # usage (ถ้ามี)
+    usage = getattr(resp, "usage", None)
+    try:
+        usage = usage.model_dump()
+    except Exception:
+        usage = usage or {}
 
-# run self-check at boot
-_pre = self_check(deep=True)
-app.logger.info("Preflight check: %s", _pre)
+    return {"text": output_text, "usage": usage}
 
 # ---------------- Routes ----------------------
 @app.get("/healthz")
 def healthz():
-    if request.args.get("deep") == "1":
-        return jsonify(self_check(deep=True)), 200
-    return jsonify({"ok": True}), 200
-
-@app.get("/api/agents")
-def api_agents():
-    items = [{"id": k, "name": v.get("name", k)} for k, v in AGENTS.items()]
-    return jsonify({"default": DEFAULT_AGENT_ID, "agents": items}), 200
+    try:
+        ensure_responses_api()
+        # ping /models เบา ๆ เพื่อเช็คสิทธิ์
+        r = requests.get(
+            "https://api.openai.com/v1/models",
+            headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+            timeout=8,
+        )
+        return jsonify({
+            "ok": r.status_code == 200,
+            "sdk": "responses",
+            "status": r.status_code,
+        }), (200 if r.status_code == 200 else 500)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.get("/")
 def index():
-    return render_template("index.html")
+    # ถ้ามีหน้า index.html ก็เสิร์ฟ, ไม่มีก็โชว์ข้อความง่าย ๆ
+    tpl = os.path.join(BASE_DIR, "templates", "index.html")
+    if os.path.exists(tpl):
+        return render_template("index.html")
+    return "Waibon is running."
 
 @app.post("/api/chat")
 def api_chat():
@@ -159,13 +174,23 @@ def api_chat():
         resp.mimetype = "application/json"
         return resp, 400
 
-    append_log(sid, "user", user_text)
-
-    agent = AGENTS.get(agent_id, AGENTS[DEFAULT_AGENT_ID])
-    msgs: List[Dict[str, str]] = [{"role": "system", "content": SYSTEM_STYLE}] + history[-10:]
+    # เตรียม messages
+    msgs: List[Dict[str, str]] = [{"role": "system", "content": SYSTEM_STYLE}]
+    # ตัด history เหลือ 10 รายการหลังสุด (ถ้าพ่อส่งมาเป็น list role/content)
+    for m in history[-10:]:
+        if isinstance(m, dict) and m.get("role") and m.get("content"):
+            msgs.append({"role": m["role"], "content": m["content"]})
     msgs.append({"role": "user", "content": user_text})
 
-    reply, usage = call_agent(agent, msgs, temperature=1.0, max_tokens=1024, stream=False)
+    agent = AGENTS.get(agent_id, AGENTS[DEFAULT_AGENT_ID])
+
+    # เรียก OpenAI
+    result = call_openai_responses(agent, msgs)
+    reply  = result["text"]
+    usage  = result.get("usage", {})
+
+    # log ลงไฟล์
+    append_log(sid, "user", user_text)
     append_log(sid, "assistant", reply, meta={"agent": agent.get("id"), "model": agent.get("model"), "usage": usage})
 
     resp.response = json.dumps(
